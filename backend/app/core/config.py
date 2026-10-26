@@ -160,7 +160,7 @@ class Settings:
 
     @property
     def DB_NAME(self) -> str:
-        return self.get("DB_NAME", "danphe_catering")
+        return self.get("DB_NAME", "rivo_dev")
 
     @property
     def DB_USER(self) -> str:
@@ -171,8 +171,11 @@ class Settings:
         return self.get("DB_PASSWORD", "Asd@78qwe")
 
     @property
-    def SQLALCHEMY_DATABASE_URL(self) -> URL:
+    def SQLALCHEMY_DATABASE_URL(self) -> Union[URL, str]:
         """Constructs the SQLAlchemy connection URL with proper credential encoding."""
+        custom_url = self.get("DATABASE_URL") or self.get("SQLALCHEMY_DATABASE_URL")
+        if custom_url:
+            return custom_url
         return URL.create(
             drivername="postgresql+psycopg2",
             username=self.DB_USER,
