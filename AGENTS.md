@@ -29,6 +29,7 @@ Dependencies flow strictly from outer to inner layers in a unidirectional pipeli
    - **Contains**:
      - Declarative base models and audit mixins: [`Base`](file:///Users/nishanranamagar/Documents/projects/danphe/rivo/backend/app/common/models.py#L24-L26), [`AuditMixin`](file:///Users/nishanranamagar/Documents/projects/danphe/rivo/backend/app/common/models.py#L29-L107), [`BaseModel`](file:///Users/nishanranamagar/Documents/projects/danphe/rivo/backend/app/common/models.py#L110-L162) matching `AuditableModal` and `AuditEntity`.
      - Filter and pagination schemas: [`AbstractFilter`](file:///Users/nishanranamagar/Documents/projects/danphe/rivo/backend/app/common/pagination.py#L22-L52), [`Page<T>`](file:///Users/nishanranamagar/Documents/projects/danphe/rivo/backend/app/common/pagination.py#L13-L19).
+     - Base UseCase template: [`UseCase[Rq, Rp]`](file:///Users/nishanranamagar/Documents/projects/danphe/rivo/backend/app/common/usecase.py) enforcing the `execute(request)` -> `validate(request)` -> `process(request)` lifecycle.
      - Standard REST response envelopes and constants: [`ResponseTemplate<T>`](file:///Users/nishanranamagar/Documents/projects/danphe/rivo/backend/app/common/schemas.py#L20-L26), [`RestResponse`](file:///Users/nishanranamagar/Documents/projects/danphe/rivo/backend/app/common/schemas.py#L48-L80), [`ApiConstants`](file:///Users/nishanranamagar/Documents/projects/danphe/rivo/backend/app/common/constants.py#L4-L9).
      - Shared utilities: [`DateUtils`](file:///Users/nishanranamagar/Documents/projects/danphe/rivo/backend/app/common/utils.py#L4-L20).
    - **Strict Rule**: Must **NEVER** import or depend on `repository`, `service`, or `api` layers.
@@ -40,12 +41,16 @@ Dependencies flow strictly from outer to inner layers in a unidirectional pipeli
      - Raw database connections, engine sessions, and SQLAlchemy query specifics must remain strictly encapsulated within repositories.
      - Never import `service` or `api` inside repositories.
 
-3. **`app/service/` (or module services)**
-   - **Contains**: Business rules, validations, orchestration, domain logic, and dedicated UseCase classes.
+3. **`app/service/` (or module services and use cases)**
+   - **Contains**: Dedicated UseCase classes (`usecases.py`) and orchestrating service classes (`service.py`).
    - **Strict Rule**:
      - Allowed dependencies: **`app/common/` and `app/repository/`**.
      - Must **NEVER** import from `app/api/` (web layer).
      - Controllers must not contain business logic; all logic belongs in services/UseCases.
+     - **All validations take place in UseCases, NOT in services**:
+       - Base `UseCase[Rq, Rp]` provides the `validate(request)` hook.
+       - Every concrete UseCase **MUST extend and implement `validate(request)`** to perform domain validations, existence checks, uniqueness constraints, and invariant verifications (raising `AppException` or `NotFoundException`).
+       - Services act as orchestrators delegating workflow execution to UseCases and must NOT contain inline validation logic.
 
 4. **`app/api/` (System & Client Portals)**
    - **Contains**:
@@ -55,6 +60,7 @@ Dependencies flow strictly from outer to inner layers in a unidirectional pipeli
      - Allowed dependencies: **`app/service/` and `app/common/`**.
      - **NEVER** depend directly on `app/repository/` or bypass the service layer to execute database queries.
      - Controllers must be **lean**: parse/validate inputs, delegate to service, and return `RestResponse.ok(result)`.
+     - **NO `summary` or `description` in route decorators**: Do NOT define `summary` or `description` attributes on controller route decorators (e.g. `@router.get`, `@router.post`) or parameters. They are unnecessary; API documentation is maintained in `FRONTEND_API.md`.
 
 ---
 
@@ -72,11 +78,12 @@ Step 2: Define Schemas & DTOs (app/modules/<feature>/schemas.py)
 Step 3: Define Repository (app/modules/<feature>/repository.py)
    │    └─ Queries, pagination, filtering, persistence
    ▼
-Step 4: Define Service & UseCases (app/modules/<feature>/service.py)
-   │    └─ Business validations, workflow rules, raise AppException / NotFoundException
+Step 4: Define UseCases & Service (app/modules/<feature>/usecases.py & service.py)
+   │    ├─ Concrete UseCases extending UseCase[Rq, Rp] implementing validations in validate() hook
+   │    └─ Service class delegating operations to UseCases (zero inline validations in service)
    ▼
 Step 5: Define API Routes (app/api/system/<feature>.py or app/api/client/<feature>.py)
-   │    └─ Lean route handlers returning RestResponse.ok(...)
+   │    └─ Lean route handlers returning RestResponse.ok(...) (omit summary/description in decorators)
    ▼
 Step 6: Register Route in Central Router (app/api/router.py)
    │    └─ Mount under /api/system or /api/client

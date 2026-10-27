@@ -1,4 +1,3 @@
-"""Production-ready FastAPI application factory matching bazar-backend standards."""
 import time
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,10 +7,10 @@ from app.common.schemas import ResponseTemplate, RestResponse
 from app.core.config import settings
 from app.core.database import check_db_connection
 from app.core.exceptions import register_exception_handlers
+from app.db.session import DatabaseSessionMiddleware
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    description="Production-grade RESTful API backend matching bazar-backend standards",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -19,7 +18,8 @@ app = FastAPI(
     debug=settings.DEBUG,
 )
 
-# 1. Global CORS Middleware configuration matching bazar-backend
+app.add_middleware(DatabaseSessionMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
@@ -29,7 +29,6 @@ app.add_middleware(
 )
 
 
-# 2. Performance & Request Timing Middleware
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
     start_time = time.perf_counter()
@@ -39,22 +38,17 @@ async def add_process_time_header(request: Request, call_next):
     return response
 
 
-# 3. Register standard global exception handlers
 register_exception_handlers(app)
 
-# 4. Mount Central API Router (/api/system, /api/client, /api/v1)
 app.include_router(api_router)
 
 
-# 5. Root Health Endpoint
 @app.get(
     "/health",
     response_model=ResponseTemplate[dict],
-    summary="Health check",
     tags=["Health"],
 )
 def health_check() -> ResponseTemplate[dict]:
-    """Basic health check endpoint for container orchestrators (Docker, Kubernetes)."""
     db_ok = check_db_connection()
     return RestResponse.ok(
         {
@@ -71,5 +65,4 @@ def health_check() -> ResponseTemplate[dict]:
     include_in_schema=False,
 )
 def root() -> ResponseTemplate[dict]:
-    """Root redirect / ping."""
     return RestResponse.ok({"message": "Welcome to Rivo API", "docs": "/docs"})

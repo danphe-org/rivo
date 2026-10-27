@@ -109,6 +109,183 @@ Used exclusively by the back-office / admin portal.
   }
   ```
 
+### 2.2 Create User (`POST /api/system/users`)
+- **Authority / Permission**: Authenticated / Admin
+- **Method**: `POST`
+- **Path**: `/api/system/users`
+- **Request Body**:
+  ```json
+  {
+    "name": "Jane Doe",
+    "email": "jane.doe@example.com",
+    "phone": "+1234567890",
+    "role": "USER"
+  }
+  ```
+- **Response**: `201 Created`
+  ```json
+  {
+    "code": "0",
+    "message": "User created successfully",
+    "data": {
+      "id": "e8334460-aefb-4171-872f-5ea3b1187c32",
+      "name": "Jane Doe",
+      "email": "jane.doe@example.com",
+      "phone": "+1234567890",
+      "role": "USER",
+      "created_on": "2026-10-26T14:50:00Z",
+      "modified_on": "2026-10-26T14:50:00Z",
+      "created_by": null,
+      "modified_by": null,
+      "active": true,
+      "deleted": false
+    },
+    "time": "2026-10-26T14:50:00.123456"
+  }
+  ```
+
+### 2.3 Get User by ID (`GET /api/system/users/{user_id}`)
+- **Authority / Permission**: Authenticated / Admin
+- **Method**: `GET`
+- **Path**: `/api/system/users/{user_id}`
+- **Path Parameters**: `user_id` (UUID string)
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": {
+      "id": "e8334460-aefb-4171-872f-5ea3b1187c32",
+      "name": "Jane Doe",
+      "email": "jane.doe@example.com",
+      "phone": "+1234567890",
+      "role": "USER",
+      "created_on": "2026-10-26T14:50:00Z",
+      "modified_on": "2026-10-26T14:50:00Z",
+      "created_by": null,
+      "modified_by": null,
+      "active": true,
+      "deleted": false
+    },
+    "time": "2026-10-26T14:50:00.123456"
+  }
+  ```
+
+### 2.4 Update User (`PUT /api/system/users/{user_id}`)
+- **Authority / Permission**: Authenticated / Admin
+- **Method**: `PUT`
+- **Path**: `/api/system/users/{user_id}`
+- **Path Parameters**: `user_id` (UUID string)
+- **Request Body**:
+  ```json
+  {
+    "name": "Jane Doe Updated",
+    "email": "jane.updated@example.com",
+    "phone": "+9876543210",
+    "role": "ADMIN",
+    "active": true
+  }
+  ```
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "User updated successfully",
+    "data": {
+      "id": "e8334460-aefb-4171-872f-5ea3b1187c32",
+      "name": "Jane Doe Updated",
+      "email": "jane.updated@example.com",
+      "phone": "+9876543210",
+      "role": "ADMIN",
+      "created_on": "2026-10-26T14:50:00Z",
+      "modified_on": "2026-10-26T14:55:00Z",
+      "created_by": null,
+      "modified_by": null,
+      "active": true,
+      "deleted": false
+    },
+    "time": "2026-10-26T14:55:00.123456"
+  }
+  ```
+
+### 2.5 Delete User (`DELETE /api/system/users/{user_id}`)
+- **Authority / Permission**: Authenticated / Admin
+- **Method**: `DELETE`
+- **Path**: `/api/system/users/{user_id}`
+- **Path Parameters**: `user_id` (UUID string)
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "User deleted successfully",
+    "data": null,
+    "time": "2026-10-26T14:55:00.123456"
+  }
+  ```
+
+### 2.6 Search Users (`POST /api/system/users/search`)
+- **Authority / Permission**: Authenticated / Admin
+- **Method**: `POST`
+- **Path**: `/api/system/users/search`
+- **Request Body**:
+  ```json
+  {
+    "pageNumber": 1,
+    "pageSize": 10,
+    "searchParameter": "Jane",
+    "role": "USER",
+    "sortField": "created_on",
+    "sortOrder": "DESC",
+    "active": true
+  }
+  ```
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": {
+      "totalRecords": 1,
+      "limit": 10,
+      "currentPage": 1,
+      "data": [
+        {
+          "id": "e8334460-aefb-4171-872f-5ea3b1187c32",
+          "name": "Jane Doe",
+          "email": "jane.doe@example.com",
+          "phone": "+1234567890",
+          "role": "USER",
+          "created_on": "2026-10-26T14:50:00Z",
+          "modified_on": "2026-10-26T14:50:00Z",
+          "created_by": null,
+          "modified_by": null,
+          "active": true,
+          "deleted": false
+        }
+      ]
+    },
+    "time": "2026-10-26T14:50:00.123456"
+  }
+  ```
+
+### 2.7 List Users (`POST /api/system/users/list` or `GET /api/system/users`)
+- **Authority / Permission**: Authenticated / Admin
+- **Method**: `POST` / `GET`
+- **Path**: `/api/system/users/list` or `/api/system/users`
+- **Request Body (Payload)**:
+  ```json
+  {
+    "pageNumber": 1,
+    "pageSize": 10,
+    "searchParameter": "Jane",
+    "role": "USER",
+    "sortField": "created_on",
+    "sortOrder": "DESC",
+    "active": true
+  }
+  ```
+- **Response**: `200 OK` (Same envelope format as `POST /api/system/users/search`).
+
 ---
 
 ## 3. Client Portal APIs (`/api/client`)
@@ -129,6 +306,53 @@ Used by the client / store / customer portal.
     "time": "2026-10-22T09:30:00.123456"
   }
   ```
+
+### 3.2 User Registration (`POST /api/client/users/register`)
+- **Authority / Permission**: None (🟢 **PUBLIC**)
+- **Method**: `POST`
+- **Path**: `/api/client/users/register`
+- **Request Body (`UserRegisterDTO`)**:
+  ```json
+  {
+    "name": "Jane Doe",
+    "email": "jane.doe@example.com",
+    "phone": "+1234567890",
+    "role": "USER"
+  }
+  ```
+- **Validation Rules (Enforced in UseCase)**:
+  - `name`: Required, non-blank, min 2 chars, max 100 chars.
+  - `email`: Required, valid email format, max 255 chars, unique across both active and soft-deleted records.
+  - `phone`: Optional. If provided, must match standard phone structure (7–20 digits) and must be unique.
+  - `role`: Optional (defaults to `"USER"`). Self-registration cannot escalate to administrative roles (limited to `USER` and `CUSTOMER`).
+  - Automatic audit initialization via universal `prepare_domain`: sets `created_by`, `created_on`, `updated_by`, `updated_on`, `active=true`, `deleted=false`, `version=1`.
+- **Response**: `201 Created`
+  ```json
+  {
+    "code": "0",
+    "message": "User registered successfully",
+    "data": {
+      "id": "e8334460-aefb-4171-872f-5ea3b1187c32",
+      "name": "Jane Doe",
+      "email": "jane.doe@example.com",
+      "phone": "+1234567890",
+      "role": "USER",
+      "created_on": "2026-10-27T15:00:00Z",
+      "modified_on": "2026-10-27T15:00:00Z",
+      "updated_on": "2026-10-27T15:00:00Z",
+      "created_by": "SELF_REGISTRATION",
+      "modified_by": "SELF_REGISTRATION",
+      "updated_by": "SELF_REGISTRATION",
+      "active": true,
+      "deleted": false,
+      "version": 1,
+      "remark": "User self-registration"
+    },
+    "time": "2026-10-27T15:00:00.123456"
+  }
+  ```
+- **Error Responses**:
+  - `400 Bad Request`: If duplicate email, duplicate phone, invalid phone format, or privilege escalation attempted (`code: "400"`).
 
 ---
 

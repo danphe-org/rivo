@@ -10,8 +10,6 @@ router = APIRouter(prefix="/ping", tags=["Client - Health"])
     "",
     response_model=ResponseTemplate[str],
     status_code=status.HTTP_200_OK,
-    summary="Client portal health ping",
-    description="Customer / Store client portal health verification endpoint. Returns 'pong'.",
 )
 def client_ping() -> ResponseTemplate[str]:
     """Return client portal ping response."""

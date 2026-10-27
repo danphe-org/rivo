@@ -19,3 +19,33 @@ source .venv/bin/activate
 ```bash
 pip install -r requirements.txt
 ```
+
+### 3. Database Migrations (Alembic)
+
+Alembic automatically reads your PostgreSQL configuration from `.env` and tracks all models registered in `app/db/base.py`.
+
+#### Generate a New Migration
+After adding or altering entity models in `app/modules/<feature>/models.py`:
+```bash
+cd backend
+alembic revision --autogenerate -m "describe_your_changes"
+```
+
+#### Apply Migrations
+```bash
+cd backend
+alembic upgrade head
+```
+
+#### Rollback Migration
+```bash
+cd backend
+alembic downgrade -1
+```
+
+#### Inspect Current Version
+```bash
+cd backend
+alembic current
+alembic history --verbose
+```
