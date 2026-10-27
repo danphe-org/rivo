@@ -194,3 +194,21 @@ Before concluding any backend coding task:
    PYTHONPATH=backend backend/.venv/bin/python -m unittest discover -s backend/tests
    ```
 2. **Verify that [`FRONTEND_API.md`](FRONTEND_API.md) is updated** and accurately reflects all changes made.
+
+---
+
+## 8. Agent Permissions & Operational Boundaries
+
+1. **Full Autonomy Inside the Project (`rivo`)**:
+   - The agent is pre-authorized to read, create, and modify files, execute commands, run tests, and perform builds inside this repository (`/Users/nishanranamagar/Documents/projects/danphe/rivo`) without asking for confirmation.
+   - When the user requests changes, implement them immediately. Do not pause to ask for trivial confirmations or routine permissions for actions inside this project.
+2. **Mandatory Permission for Deletions**:
+   - The agent must **ALWAYS** ask for explicit user permission before deleting any file or directory (e.g. `rm`, `rm -rf`, `os.remove`, or file deletion tools) inside or outside the repository.
+3. **External File Boundary (Outside `rivo`)**:
+   - The agent must **NEVER** inspect, read, view, create, edit, or manipulate any files or directories located **outside** this repository without asking for explicit user permission first.
+4. **Code Cleanliness & Comments**:
+   - Maintain zero `#` comments and zero docstrings in application code (`backend/app/`). Code must remain clean, self-documenting, and free of extraneous comments.
+5. **Testing Data Limit (Token & Resource Optimization)**:
+   - When writing or executing tests across all CRUD operations, test with at most 5 data items / sample records (never more than 5).
+   - If 5 records are not sufficient to verify a scenario, pause and ask the user how many more test records to use.
+

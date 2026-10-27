@@ -9,6 +9,7 @@ from app.common.schemas import BaseAuditSchema
 class UserCreateDTO(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     email: EmailStr = Field(...)
+    password: Optional[str] = Field(default=None, max_length=128)
     phone: Optional[str] = Field(default=None, max_length=30)
     role: str = Field(default="USER", max_length=50)
 
@@ -25,6 +26,7 @@ class UserCreateDTO(BaseModel):
 class UserRegisterDTO(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     email: EmailStr = Field(...)
+    password: Optional[str] = Field(default=None, max_length=128)
     phone: Optional[str] = Field(default=None, max_length=30)
     role: str = Field(default="USER", max_length=50)
 
@@ -41,6 +43,7 @@ class UserRegisterDTO(BaseModel):
 class UserUpdateDTO(BaseModel):
     name: Optional[str] = Field(default=None, min_length=2, max_length=100)
     email: Optional[EmailStr] = Field(default=None)
+    password: Optional[str] = Field(default=None, max_length=128)
     phone: Optional[str] = Field(default=None, max_length=30)
     role: Optional[str] = Field(default=None, max_length=50)
     active: Optional[bool] = Field(default=None)

@@ -118,6 +118,7 @@ Used exclusively by the back-office / admin portal.
   {
     "name": "Jane Doe",
     "email": "jane.doe@example.com",
+    "password": "AdminSetPassword123!",
     "phone": "+1234567890",
     "role": "USER"
   }
@@ -316,14 +317,16 @@ Used by the client / store / customer portal.
   {
     "name": "Jane Doe",
     "email": "jane.doe@example.com",
+    "password": "SecurePassword123!",
     "phone": "+1234567890",
     "role": "USER"
   }
   ```
 - **Validation Rules (Enforced in UseCase)**:
   - `name`: Required, non-blank, min 2 chars, max 100 chars.
-  - `email`: Required, valid email format, max 255 chars, unique across both active and soft-deleted records.
-  - `phone`: Optional. If provided, must match standard phone structure (7–20 digits) and must be unique.
+  - `email`: Required, valid email format, max 255 chars, strictly unique across both active and soft-deleted records (only one user per email).
+  - `password`: Optional, min 8 chars, max 128 chars. Strict rules: must contain at least one uppercase letter, at least one lowercase letter, at least one number, at least one special character, and no whitespace. Securely hashed via bcrypt before persistence. Never returned in any response.
+  - `phone`: Optional. If provided, must match standard phone structure (7–20 digits) and strictly unique across all records (only one user per phone number).
   - `role`: Optional (defaults to `"USER"`). Self-registration cannot escalate to administrative roles (limited to `USER` and `CUSTOMER`).
   - Automatic audit initialization via universal `prepare_domain`: sets `created_by`, `created_on`, `updated_by`, `updated_on`, `active=true`, `deleted=false`, `version=1`.
 - **Response**: `201 Created`

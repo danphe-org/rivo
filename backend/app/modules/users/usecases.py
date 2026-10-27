@@ -6,6 +6,7 @@ import uuid
 from app.common.pagination import Page
 from app.common.usecase import UseCase
 from app.core.exceptions import AppException, NotFoundException
+from app.core.security import hash_password
 from app.modules.users.models import User
 from app.modules.users.repository import UserRepository
 from app.modules.users.schemas import (
@@ -24,6 +25,23 @@ def _validate_phone_format(phone: str) -> None:
     digits_only = re.sub(r"[\s\-\(\)\+]", "", phone)
     if not digits_only.isdigit() or len(digits_only) < 7 or len(digits_only) > 20:
         raise AppException("Invalid phone number format")
+
+
+def _validate_strict_password(password: str) -> None:
+    if not password or len(password) < 8:
+        raise AppException("Password must be at least 8 characters long")
+    if len(password) > 128:
+        raise AppException("Password must not exceed 128 characters")
+    if any(c.isspace() for c in password):
+        raise AppException("Password must not contain whitespace")
+    if not any(c.isupper() for c in password):
+        raise AppException("Password must contain at least one uppercase letter")
+    if not any(c.islower() for c in password):
+        raise AppException("Password must contain at least one lowercase letter")
+    if not any(c.isdigit() for c in password):
+        raise AppException("Password must contain at least one number")
+    if not any(c in "!@#$%^&*()_+-=[]{};':\",.<>/?`~|\\" for c in password):
+        raise AppException("Password must contain at least one special character")
 
 
 @dataclass
@@ -60,9 +78,15 @@ class RegisterUserUseCase(UseCase[RegisterUserCommand, UserResponseDTO]):
         if existing_user:
             raise AppException("A user with this email address already exists")
 
+        if dto.password is not None:
+            _validate_strict_password(dto.password)
+
         if dto.phone:
             cleaned_phone = dto.phone.strip()
             _validate_phone_format(cleaned_phone)
+            existing_phone = self.repo.get_by_phone(cleaned_phone, include_deleted=True)
+            if existing_phone:
+                raise AppException("A user with this phone number already exists")
 
         role_upper = dto.role.strip().upper() if dto.role else "USER"
         if role_upper not in VALID_USER_ROLES:
@@ -76,9 +100,12 @@ class RegisterUserUseCase(UseCase[RegisterUserCommand, UserResponseDTO]):
         normalized_email = str(dto.email).lower().strip()
         role = dto.role.strip().upper() if dto.role else "USER"
 
+        hashed_pw = hash_password(dto.password) if dto.password else None
+
         user = User(
             name=dto.name.strip(),
             email=normalized_email,
+            password=hashed_pw,
             phone=dto.phone.strip() if dto.phone else None,
             role=role,
         )
@@ -128,9 +155,15 @@ class CreateUserUseCase(UseCase[CreateUserCommand, UserResponseDTO]):
         if existing_user:
             raise AppException("A user with this email address already exists")
 
+        if dto.password is not None:
+            _validate_strict_password(dto.password)
+
         if dto.phone:
             cleaned_phone = dto.phone.strip()
             _validate_phone_format(cleaned_phone)
+            existing_phone = self.repo.get_by_phone(cleaned_phone, include_deleted=True)
+            if existing_phone:
+                raise AppException("A user with this phone number already exists")
 
         role_upper = dto.role.strip().upper() if dto.role else "USER"
         if role_upper not in VALID_USER_ROLES:
@@ -139,9 +172,12 @@ class CreateUserUseCase(UseCase[CreateUserCommand, UserResponseDTO]):
     def process(self, request: CreateUserCommand) -> UserResponseDTO:
         dto = request.dto
         normalized_email = str(dto.email).lower().strip()
+        hashed_pw = hash_password(dto.password) if dto.password else None
+
         user = User(
             name=dto.name.strip(),
             email=normalized_email,
+            password=hashed_pw,
             phone=dto.phone.strip() if dto.phone else None,
             role=dto.role.strip() if dto.role else "USER",
         )
@@ -208,10 +244,17 @@ class UpdateUserUseCase(UseCase[UpdateUserCommand, UserResponseDTO]):
                 if existing and existing.id != user.id:
                     raise AppException("A user with this email address already exists")
 
+        if request.dto.password is not None:
+            _validate_strict_password(request.dto.password)
+
         if request.dto.phone is not None:
             cleaned_phone = request.dto.phone.strip()
             if cleaned_phone:
                 _validate_phone_format(cleaned_phone)
+                if not user.phone or user.phone.strip() != cleaned_phone:
+                    existing_phone = self.repo.get_by_phone(cleaned_phone, include_deleted=True)
+                    if existing_phone and existing_phone.id != user.id:
+                        raise AppException("A user with this phone number already exists")
 
         if request.dto.role is not None:
             role_upper = request.dto.role.strip().upper()
@@ -229,6 +272,9 @@ class UpdateUserUseCase(UseCase[UpdateUserCommand, UserResponseDTO]):
 
         if dto.name is not None:
             user.name = dto.name.strip()
+
+        if dto.password is not None:
+            user.password = hash_password(dto.password)
 
         if dto.phone is not None:
             user.phone = dto.phone.strip() if dto.phone else None

@@ -5,6 +5,7 @@ import uuid
 
 from app.common.usecase import UseCase
 from app.core.exceptions import AppException, NotFoundException
+from app.core.security import verify_password
 from app.modules.users.models import User
 from app.modules.users.schemas import (
     UserCreateDTO,
@@ -123,16 +124,23 @@ class TestUseCaseArchitecture(unittest.TestCase):
         self.assertEqual(updated_dict["version"], 2)
 
     def test_register_user_use_case_success_and_prepare_domain(self):
+        saved_instances = []
         mock_repo = MagicMock()
         mock_repo.get_by_email.return_value = None
         mock_repo.get_by_phone.return_value = None
-        mock_repo.save.side_effect = lambda u: u
+
+        def record_save(u):
+            saved_instances.append(u)
+            return u
+
+        mock_repo.save.side_effect = record_save
 
         use_case = RegisterUserUseCase(mock_repo)
         cmd = RegisterUserCommand(
             dto=UserRegisterDTO(
                 name="John Public",
                 email="john.public@example.com",
+                password="MySecurePassword123!",
                 phone="+1-555-123-4567",
                 role="USER",
             ),
@@ -148,6 +156,74 @@ class TestUseCaseArchitecture(unittest.TestCase):
         self.assertFalse(response.deleted)
         self.assertEqual(response.version, 1)
         mock_repo.save.assert_called_once()
+
+        saved_user = saved_instances[0]
+        self.assertNotEqual(saved_user.password, "MySecurePassword123!")
+        self.assertTrue(verify_password("MySecurePassword123!", saved_user.password))
+
+    def test_register_user_password_length_validation(self):
+        mock_repo = MagicMock()
+        mock_repo.get_by_email.return_value = None
+        mock_repo.get_by_phone.return_value = None
+        use_case = RegisterUserUseCase(mock_repo)
+
+        cmd_short = RegisterUserCommand(
+            dto=UserRegisterDTO.model_construct(
+                name="Short Pw",
+                email="short@example.com",
+                password="123",
+            )
+        )
+        with self.assertRaises(AppException) as ctx:
+            use_case.validate(cmd_short)
+        self.assertIn("at least 8 characters", str(ctx.exception))
+
+    def test_register_user_strict_password_rules(self):
+        mock_repo = MagicMock()
+        mock_repo.get_by_email.return_value = None
+        mock_repo.get_by_phone.return_value = None
+        use_case = RegisterUserUseCase(mock_repo)
+
+        invalid_passwords = [
+            ("lowercaseonly123!", "uppercase letter"),
+            ("UPPERCASEONLY123!", "lowercase letter"),
+            ("NoNumbersHere!@#", "number"),
+            ("NoSpecialChar123", "special character"),
+            ("Has Space123!", "whitespace"),
+        ]
+        for pw, err_fragment in invalid_passwords:
+            cmd = RegisterUserCommand(
+                dto=UserRegisterDTO.model_construct(
+                    name="Test User",
+                    email="test@example.com",
+                    password=pw,
+                )
+            )
+            with self.assertRaises(AppException) as ctx:
+                use_case.validate(cmd)
+            self.assertIn(err_fragment, str(ctx.exception))
+
+    def test_register_user_duplicate_phone_fails(self):
+        mock_repo = MagicMock()
+        mock_repo.get_by_email.return_value = None
+        mock_repo.get_by_phone.return_value = User(
+            id=uuid.uuid4(),
+            email="other@example.com",
+            phone="+977-981-111111",
+            name="Other User",
+        )
+
+        use_case = RegisterUserUseCase(mock_repo)
+        cmd = RegisterUserCommand(
+            dto=UserRegisterDTO(
+                name="New User",
+                email="fresh@example.com",
+                phone="+977-981-111111",
+            )
+        )
+        with self.assertRaises(AppException) as ctx:
+            use_case.validate(cmd)
+        self.assertIn("A user with this phone number already exists", str(ctx.exception))
 
     def test_register_user_duplicate_email_fails(self):
         mock_repo = MagicMock()
@@ -234,6 +310,52 @@ class TestUseCaseArchitecture(unittest.TestCase):
             use_case.validate(cmd)
         self.assertIn("already exists", str(ctx.exception))
 
+    def test_create_user_use_case_hashes_password(self):
+        saved_instances = []
+        mock_repo = MagicMock()
+        mock_repo.get_by_email.return_value = None
+        mock_repo.get_by_phone.return_value = None
+
+        def record_save(u):
+            saved_instances.append(u)
+            return u
+
+        mock_repo.save.side_effect = record_save
+
+        use_case = CreateUserUseCase(mock_repo)
+        cmd = CreateUserCommand(
+            dto=UserCreateDTO(
+                name="Admin Created",
+                email="admincreated@example.com",
+                password="AdminCreatedPassword123!",
+            )
+        )
+        use_case.execute(cmd)
+        self.assertEqual(len(saved_instances), 1)
+        self.assertTrue(verify_password("AdminCreatedPassword123!", saved_instances[0].password))
+
+    def test_create_user_duplicate_phone_fails(self):
+        mock_repo = MagicMock()
+        mock_repo.get_by_email.return_value = None
+        mock_repo.get_by_phone.return_value = User(
+            id=uuid.uuid4(),
+            email="other@example.com",
+            phone="+977-981-111111",
+            name="Other User",
+        )
+
+        use_case = CreateUserUseCase(mock_repo)
+        cmd = CreateUserCommand(
+            dto=UserCreateDTO(
+                name="New User",
+                email="fresh@example.com",
+                phone="+977-981-111111",
+            )
+        )
+        with self.assertRaises(AppException) as ctx:
+            use_case.validate(cmd)
+        self.assertIn("A user with this phone number already exists", str(ctx.exception))
+
     def test_get_user_use_case_validation_fails_when_not_found(self):
         mock_repo = MagicMock()
         mock_repo.get_by_id.return_value = None
@@ -277,6 +399,64 @@ class TestUseCaseArchitecture(unittest.TestCase):
         with self.assertRaises(AppException) as ctx:
             use_case.validate(cmd)
         self.assertIn("already exists", str(ctx.exception))
+
+    def test_update_user_use_case_validation_fails_on_duplicate_phone(self):
+        user_id = uuid.uuid4()
+        other_user_id = uuid.uuid4()
+
+        current_user = User(id=user_id, email="current@example.com", phone="+977-9800000000", name="Current")
+        existing_other = User(id=other_user_id, email="other@example.com", phone="+977-9811111111", name="Other")
+
+        mock_repo = MagicMock()
+        mock_repo.get_by_id.return_value = current_user
+        mock_repo.get_by_phone.return_value = existing_other
+
+        use_case = UpdateUserUseCase(mock_repo)
+        cmd = UpdateUserCommand(
+            user_id=user_id,
+            dto=UserUpdateDTO(phone="+977-9811111111"),
+        )
+
+        with self.assertRaises(AppException) as ctx:
+            use_case.validate(cmd)
+        self.assertIn("A user with this phone number already exists", str(ctx.exception))
+
+    def test_update_user_use_case_same_phone_passes(self):
+        user_id = uuid.uuid4()
+        current_user = User(id=user_id, email="current@example.com", phone="+977-9800000000", name="Current")
+
+        mock_repo = MagicMock()
+        mock_repo.get_by_id.return_value = current_user
+
+        use_case = UpdateUserUseCase(mock_repo)
+        cmd = UpdateUserCommand(
+            user_id=user_id,
+            dto=UserUpdateDTO(phone="+977-9800000000"),
+        )
+        use_case.validate(cmd)
+
+    def test_update_user_use_case_hashes_updated_password(self):
+        user_id = uuid.uuid4()
+        current_user = User(id=user_id, email="user@example.com", name="User", role="USER")
+        saved_instances = []
+
+        mock_repo = MagicMock()
+        mock_repo.get_by_id.return_value = current_user
+
+        def record_save(u):
+            saved_instances.append(u)
+            return u
+
+        mock_repo.save.side_effect = record_save
+
+        use_case = UpdateUserUseCase(mock_repo)
+        cmd = UpdateUserCommand(
+            user_id=user_id,
+            dto=UserUpdateDTO(password="NewSecretPassword123!"),
+        )
+        use_case.execute(cmd)
+        self.assertEqual(len(saved_instances), 1)
+        self.assertTrue(verify_password("NewSecretPassword123!", saved_instances[0].password))
 
     def test_delete_user_use_case_validation_fails_when_not_found(self):
         mock_repo = MagicMock()
