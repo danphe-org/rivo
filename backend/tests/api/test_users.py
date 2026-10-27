@@ -31,9 +31,18 @@ class TestUserCrud(unittest.TestCase):
         self.assertEqual(data["data"]["email"], payload["email"])
         self.assertEqual(data["data"]["name"], payload["name"])
         self.assertEqual(data["data"]["role"], "USER")
+        self.assertIsNotNone(data["data"]["roles"])
+        self.assertEqual(len(data["data"]["roles"]), 1)
+        self.assertEqual(data["data"]["roles"][0]["role"], "USER")
+        self.assertEqual(data["data"]["roles"][0]["user_id"], data["data"]["id"])
         self.assertTrue(data["data"]["active"])
         self.assertFalse(data["data"]["deleted"])
         self.assertIsNotNone(data["data"]["created_on"])
+
+        user = user_repository.get_by_id(uuid.UUID(data["data"]["id"]))
+        self.assertIsNotNone(user)
+        self.assertEqual(len(user.roles), 1)
+        self.assertEqual(user.roles[0].role, "USER")
 
     def test_create_user_duplicate_email_fails(self):
         payload = {
@@ -238,7 +247,6 @@ class TestUserCrud(unittest.TestCase):
             "email": f"reg_{self.unique_suffix}@example.com",
             "password": "SecretPassword123!",
             "phone": self.unique_phone,
-            "role": "USER",
         }
         response = self.client.post("/api/client/users/register", json=payload)
         self.assertEqual(response.status_code, 201)
@@ -251,9 +259,18 @@ class TestUserCrud(unittest.TestCase):
         self.assertEqual(data["data"]["name"], payload["name"])
         self.assertEqual(data["data"]["phone"], payload["phone"])
         self.assertEqual(data["data"]["role"], "USER")
+        self.assertIsNotNone(data["data"]["roles"])
+        self.assertEqual(len(data["data"]["roles"]), 1)
+        self.assertEqual(data["data"]["roles"][0]["role"], "USER")
+        self.assertEqual(data["data"]["roles"][0]["user_id"], data["data"]["id"])
         self.assertTrue(data["data"]["active"])
         self.assertFalse(data["data"]["deleted"])
         self.assertIsNotNone(data["data"]["created_on"])
+
+        user = user_repository.get_by_id(uuid.UUID(data["data"]["id"]))
+        self.assertIsNotNone(user)
+        self.assertEqual(len(user.roles), 1)
+        self.assertEqual(user.roles[0].role, "USER")
         self.assertEqual(data["data"]["created_by"], "SELF_REGISTRATION")
         self.assertEqual(data["data"]["version"], 1)
         self.assertNotIn("password", data["data"])
@@ -345,19 +362,20 @@ class TestUserCrud(unittest.TestCase):
         self.assertEqual(err["code"], "400")
         self.assertIn("Invalid phone number format", err["message"])
 
-    def test_client_user_registration_privilege_escalation_prohibited(self):
+    def test_client_user_registration_ignores_frontend_role_and_assigns_user(self):
+        suffix = uuid.uuid4().hex[:8]
         response = self.client.post(
             "/api/client/users/register",
             json={
-                "name": f"Hacker {self.unique_suffix}",
-                "email": f"hacker_{self.unique_suffix}@example.com",
+                "name": f"Hacker {suffix}",
+                "email": f"hacker_{suffix}@example.com",
                 "role": "ADMIN",
             },
         )
-        self.assertEqual(response.status_code, 400)
-        err = response.json()
-        self.assertEqual(err["code"], "400")
-        self.assertIn("Self-registration is limited to USER or CUSTOMER roles", err["message"])
+        self.assertEqual(response.status_code, 201)
+        data = response.json()["data"]
+        self.assertEqual(data["role"], "USER")
+        self.assertEqual(data["roles"][0]["role"], "USER")
 
 
 if __name__ == "__main__":

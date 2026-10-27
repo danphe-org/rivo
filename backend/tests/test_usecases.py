@@ -6,7 +6,7 @@ import uuid
 from app.common.usecase import UseCase
 from app.core.exceptions import AppException, NotFoundException
 from app.core.security import verify_password
-from app.modules.users.models import User
+from app.modules.users.models import User, UserRole
 from app.modules.users.schemas import (
     UserCreateDTO,
     UserFilter,
@@ -142,7 +142,6 @@ class TestUseCaseArchitecture(unittest.TestCase):
                 email="john.public@example.com",
                 password="MySecurePassword123!",
                 phone="+1-555-123-4567",
-                role="USER",
             ),
             created_by="REGISTRATION_FLOW",
         )
@@ -160,6 +159,11 @@ class TestUseCaseArchitecture(unittest.TestCase):
         saved_user = saved_instances[0]
         self.assertNotEqual(saved_user.password, "MySecurePassword123!")
         self.assertTrue(verify_password("MySecurePassword123!", saved_user.password))
+        self.assertEqual(len(saved_user.roles), 1)
+        self.assertEqual(saved_user.roles[0].role, "USER")
+        self.assertEqual(saved_user.roles[0].user_id, saved_user.id)
+        self.assertEqual(saved_user.roles[0].created_by, "REGISTRATION_FLOW")
+        self.assertEqual(saved_user.roles[0].version, 1)
 
     def test_register_user_password_length_validation(self):
         mock_repo = MagicMock()
@@ -259,39 +263,29 @@ class TestUseCaseArchitecture(unittest.TestCase):
             use_case.validate(cmd)
         self.assertIn("Invalid phone number format", str(ctx.exception))
 
-    def test_register_user_prohibits_admin_privilege_escalation(self):
+    def test_register_user_always_assigns_user_role(self):
+        saved_instances = []
+
+        def record_save(u):
+            saved_instances.append(u)
+            return u
+
         mock_repo = MagicMock()
+        mock_repo.find_conflicts.return_value = (None, None)
         mock_repo.get_by_email.return_value = None
+        mock_repo.get_by_phone.return_value = None
+        mock_repo.save.side_effect = record_save
 
         use_case = RegisterUserUseCase(mock_repo)
         cmd = RegisterUserCommand(
             dto=UserRegisterDTO(
-                name="Escalation Attempter",
-                email="attempter@example.com",
-                role="ADMIN",
+                name="Auto Role User",
+                email="autorole@example.com",
             )
         )
-
-        with self.assertRaises(AppException) as ctx:
-            use_case.validate(cmd)
-        self.assertIn("Self-registration is limited to USER or CUSTOMER roles", str(ctx.exception))
-
-    def test_register_user_invalid_role_fails(self):
-        mock_repo = MagicMock()
-        mock_repo.get_by_email.return_value = None
-
-        use_case = RegisterUserUseCase(mock_repo)
-        cmd = RegisterUserCommand(
-            dto=UserRegisterDTO(
-                name="Bad Role User",
-                email="badrole@example.com",
-                role="SUPER_HACKER",
-            )
-        )
-
-        with self.assertRaises(AppException) as ctx:
-            use_case.validate(cmd)
-        self.assertIn("Invalid user role", str(ctx.exception))
+        response = use_case.execute(cmd)
+        self.assertEqual(response.role, "USER")
+        self.assertEqual(saved_instances[0].roles[0].role, "USER")
 
     def test_create_user_use_case_validation_fails_on_duplicate(self):
         mock_repo = MagicMock()
@@ -469,6 +463,34 @@ class TestUseCaseArchitecture(unittest.TestCase):
         with self.assertRaises(NotFoundException) as ctx:
             use_case.validate(cmd)
         self.assertIn("User not found", str(ctx.exception))
+
+    def test_update_user_use_case_updates_role_in_user_roles(self):
+        user_id = uuid.uuid4()
+        user_role = UserRole(id=uuid.uuid4(), user_id=user_id, role="USER")
+        current_user = User(id=user_id, email="admin@example.com", name="Admin")
+        current_user.roles = [user_role]
+
+        saved_instances = []
+        mock_repo = MagicMock()
+        mock_repo.get_by_id.return_value = current_user
+
+        def record_save(u):
+            saved_instances.append(u)
+            return u
+
+        mock_repo.save.side_effect = record_save
+
+        use_case = UpdateUserUseCase(mock_repo)
+        cmd = UpdateUserCommand(
+            user_id=user_id,
+            dto=UserUpdateDTO(role="ADMIN"),
+            modified_by="super_admin",
+        )
+        use_case.execute(cmd)
+        self.assertEqual(len(saved_instances), 1)
+        self.assertEqual(saved_instances[0].role, "ADMIN")
+        self.assertEqual(saved_instances[0].roles[0].role, "ADMIN")
+        self.assertEqual(saved_instances[0].roles[0].last_modified_by, "super_admin")
 
     def test_search_users_use_case_validation_invalid_bounds(self):
         mock_repo = MagicMock()

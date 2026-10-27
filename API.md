@@ -109,6 +109,103 @@ Used exclusively by the back-office / admin portal.
   }
   ```
 
+### 2.2 System Login (`POST /api/system/auth/login`)
+- **Authority / Permission**: None (🟢 **PUBLIC**)
+- **Method**: `POST`
+- **Path**: `/api/system/auth/login`
+- **Access Rule**: Requires administrative role (`ADMIN` or `STAFF`). Non-admin users are rejected with HTTP 403.
+- **Request Body (`LoginDTO`)**:
+  ```json
+  {
+    "email": "admin@example.com",
+    "password": "AdminPassword123!"
+  }
+  ```
+- **Cookies Set**:
+  - `access_token`: HttpOnly; Path=/; Max-Age=900 (15 min); SameSite=Lax (or None in production)
+  - `refresh_token`: HttpOnly; Path=/; Max-Age=604800 (7 days); SameSite=Lax (or None in production)
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "Login successful",
+    "data": {
+      "id": "e8334460-aefb-4171-872f-5ea3b1187c32",
+      "name": "Admin User",
+      "email": "admin@example.com",
+      "phone": "+1234567890",
+      "role": "ADMIN",
+      "roles": [
+        {
+          "id": "f1234567-89ab-cdef-0123-456789abcdef",
+          "user_id": "e8334460-aefb-4171-872f-5ea3b1187c32",
+          "role": "ADMIN",
+          "created_on": "2026-10-26T14:50:00Z",
+          "modified_on": "2026-10-26T14:50:00Z",
+          "active": true,
+          "deleted": false
+        }
+      ],
+      "access_token": "<jwt-token>",
+      "refresh_token": "<jwt-token>",
+      "token_type": "Bearer",
+      "created_on": "2026-10-26T14:50:00Z",
+      "modified_on": "2026-10-26T14:50:00Z",
+      "active": true,
+      "deleted": false
+    },
+    "time": "2026-10-27T15:00:00.123456"
+  }
+  ```
+
+### 2.3 System Token Refresh (`POST /api/system/auth/refresh`)
+- **Authority / Permission**: Authenticated via `refresh_token` cookie or request body
+- **Method**: `POST`
+- **Path**: `/api/system/auth/refresh`
+- **Request Body (Optional if cookie present)**:
+  ```json
+  {
+    "refresh_token": "<jwt-refresh-token>"
+  }
+  ```
+- **Cookies Updated**: `access_token`, `refresh_token`
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "Token refreshed successfully",
+    "data": {
+      "access_token": "<new-jwt-access-token>",
+      "refresh_token": "<new-jwt-refresh-token>",
+      "token_type": "Bearer"
+    },
+    "time": "2026-10-27T15:00:00.123456"
+  }
+  ```
+
+### 2.4 System Logout (`POST /api/system/auth/logout`)
+- **Authority / Permission**: None (🟢 **PUBLIC**)
+- **Method**: `POST`
+- **Path**: `/api/system/auth/logout`
+- **Cookies Cleared**: `access_token`, `refresh_token`
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "Logged out successfully",
+    "data": {
+      "message": "Logged out successfully"
+    },
+    "time": "2026-10-27T15:00:00.123456"
+  }
+  ```
+
+### 2.5 System Current User Profile (`GET /api/system/auth/me`)
+- **Authority / Permission**: Authenticated (Admin/Staff)
+- **Method**: `GET`
+- **Path**: `/api/system/auth/me`
+- **Response**: `200 OK` (Standard `UserResponseDTO` envelope).
+
 ### 2.2 Create User (`POST /api/system/users`)
 - **Authority / Permission**: Authenticated / Admin
 - **Method**: `POST`
@@ -134,6 +231,17 @@ Used exclusively by the back-office / admin portal.
       "email": "jane.doe@example.com",
       "phone": "+1234567890",
       "role": "USER",
+      "roles": [
+        {
+          "id": "f1234567-89ab-cdef-0123-456789abcdef",
+          "user_id": "e8334460-aefb-4171-872f-5ea3b1187c32",
+          "role": "USER",
+          "created_on": "2026-10-26T14:50:00Z",
+          "modified_on": "2026-10-26T14:50:00Z",
+          "active": true,
+          "deleted": false
+        }
+      ],
       "created_on": "2026-10-26T14:50:00Z",
       "modified_on": "2026-10-26T14:50:00Z",
       "created_by": null,
@@ -161,6 +269,17 @@ Used exclusively by the back-office / admin portal.
       "email": "jane.doe@example.com",
       "phone": "+1234567890",
       "role": "USER",
+      "roles": [
+        {
+          "id": "f1234567-89ab-cdef-0123-456789abcdef",
+          "user_id": "e8334460-aefb-4171-872f-5ea3b1187c32",
+          "role": "USER",
+          "created_on": "2026-10-26T14:50:00Z",
+          "modified_on": "2026-10-26T14:50:00Z",
+          "active": true,
+          "deleted": false
+        }
+      ],
       "created_on": "2026-10-26T14:50:00Z",
       "modified_on": "2026-10-26T14:50:00Z",
       "created_by": null,
@@ -308,6 +427,97 @@ Used by the client / store / customer portal.
   }
   ```
 
+### 3.2 Client Login (`POST /api/client/auth/login`)
+- **Authority / Permission**: None (🟢 **PUBLIC**)
+- **Method**: `POST`
+- **Path**: `/api/client/auth/login`
+- **Request Body (`LoginDTO`)**:
+  ```json
+  {
+    "email": "customer@example.com",
+    "password": "CustomerPassword123!"
+  }
+  ```
+- **Cookies Set**:
+  - `access_token`: HttpOnly; Path=/; Max-Age=900 (15 min); SameSite=Lax
+  - `refresh_token`: HttpOnly; Path=/; Max-Age=604800 (7 days); SameSite=Lax
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "Login successful",
+    "data": {
+      "id": "e8334460-aefb-4171-872f-5ea3b1187c32",
+      "name": "Jane Customer",
+      "email": "customer@example.com",
+      "phone": "+1234567890",
+      "role": "USER",
+      "roles": [
+        {
+          "id": "f1234567-89ab-cdef-0123-456789abcdef",
+          "user_id": "e8334460-aefb-4171-872f-5ea3b1187c32",
+          "role": "USER",
+          "created_on": "2026-10-26T14:50:00Z",
+          "modified_on": "2026-10-26T14:50:00Z",
+          "active": true,
+          "deleted": false
+        }
+      ],
+      "access_token": "<jwt-token>",
+      "refresh_token": "<jwt-token>",
+      "token_type": "Bearer",
+      "created_on": "2026-10-26T14:50:00Z",
+      "modified_on": "2026-10-26T14:50:00Z",
+      "active": true,
+      "deleted": false
+    },
+    "time": "2026-10-27T15:00:00.123456"
+  }
+  ```
+
+### 3.3 Client Register (`POST /api/client/auth/register`)
+- **Authority / Permission**: None (🟢 **PUBLIC**)
+- **Method**: `POST`
+- **Path**: `/api/client/auth/register`
+- **Request Body (`UserRegisterDTO`)**:
+  ```json
+  {
+    "name": "Jane Doe",
+    "email": "jane.doe@example.com",
+    "password": "SecurePassword123!",
+    "phone": "+1234567890"
+  }
+  ```
+- **Role Assignment**: Automatically assigned `role: "USER"` by backend. Frontend does not send role.
+- **Cookies Set**: Automatically logs in user upon successful registration (`access_token`, `refresh_token` cookies set).
+- **Response**: `201 Created` (Returns `LoginResponseDTO` with tokens and user profile).
+
+### 3.4 Client Token Refresh (`POST /api/client/auth/refresh`)
+- **Authority / Permission**: Authenticated via `refresh_token` cookie or request body
+- **Method**: `POST`
+- **Path**: `/api/client/auth/refresh`
+- **Request Body (Optional if cookie present)**:
+  ```json
+  {
+    "refresh_token": "<jwt-refresh-token>"
+  }
+  ```
+- **Cookies Updated**: `access_token`, `refresh_token`
+- **Response**: `200 OK`
+
+### 3.5 Client Logout (`POST /api/client/auth/logout`)
+- **Authority / Permission**: None (🟢 **PUBLIC**)
+- **Method**: `POST`
+- **Path**: `/api/client/auth/logout`
+- **Cookies Cleared**: `access_token`, `refresh_token`
+- **Response**: `200 OK`
+
+### 3.6 Client Current User Profile (`GET /api/client/auth/me`)
+- **Authority / Permission**: Authenticated (`access_token` required in cookie or Authorization header)
+- **Method**: `GET`
+- **Path**: `/api/client/auth/me`
+- **Response**: `200 OK` (`UserResponseDTO`)
+
 ### 3.2 User Registration (`POST /api/client/users/register`)
 - **Authority / Permission**: None (🟢 **PUBLIC**)
 - **Method**: `POST`
@@ -318,8 +528,7 @@ Used by the client / store / customer portal.
     "name": "Jane Doe",
     "email": "jane.doe@example.com",
     "password": "SecurePassword123!",
-    "phone": "+1234567890",
-    "role": "USER"
+    "phone": "+1234567890"
   }
   ```
 - **Validation Rules (Enforced in UseCase)**:
@@ -327,7 +536,7 @@ Used by the client / store / customer portal.
   - `email`: Required, valid email format, max 255 chars, strictly unique across both active and soft-deleted records (only one user per email).
   - `password`: Optional, min 8 chars, max 128 chars. Strict rules: must contain at least one uppercase letter, at least one lowercase letter, at least one number, at least one special character, and no whitespace. Securely hashed via bcrypt before persistence. Never returned in any response.
   - `phone`: Optional. If provided, must match standard phone structure (7–20 digits) and strictly unique across all records (only one user per phone number).
-  - `role`: Optional (defaults to `"USER"`). Self-registration cannot escalate to administrative roles (limited to `USER` and `CUSTOMER`).
+  - `role`: Not accepted from frontend. The backend strictly and automatically assigns role `"USER"` on registration.
   - Automatic audit initialization via universal `prepare_domain`: sets `created_by`, `created_on`, `updated_by`, `updated_on`, `active=true`, `deleted=false`, `version=1`.
 - **Response**: `201 Created`
   ```json
@@ -340,6 +549,17 @@ Used by the client / store / customer portal.
       "email": "jane.doe@example.com",
       "phone": "+1234567890",
       "role": "USER",
+      "roles": [
+        {
+          "id": "f1234567-89ab-cdef-0123-456789abcdef",
+          "user_id": "e8334460-aefb-4171-872f-5ea3b1187c32",
+          "role": "USER",
+          "created_on": "2026-10-27T15:00:00Z",
+          "modified_on": "2026-10-27T15:00:00Z",
+          "active": true,
+          "deleted": false
+        }
+      ],
       "created_on": "2026-10-27T15:00:00Z",
       "modified_on": "2026-10-27T15:00:00Z",
       "updated_on": "2026-10-27T15:00:00Z",

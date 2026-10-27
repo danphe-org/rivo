@@ -33,6 +33,11 @@ htmlcov/
 # Logs
 *.log
 
+# Node dependencies & builds
+node_modules/
+dist/
+dist-ssr/
+
 # OS generated files
 .DS_Store
 Thumbs.db

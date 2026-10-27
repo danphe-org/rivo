@@ -1,10 +1,10 @@
 import uuid
 from typing import List, Optional, Tuple
 from sqlalchemy import func, or_, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.db.session import get_current_session
-from app.modules.users.models import User
+from app.modules.users.models import User, UserRole
 from app.modules.users.schemas import UserFilter
 
 
@@ -22,36 +22,68 @@ class UserRepository:
         user_id: uuid.UUID,
         include_deleted: bool = False,
     ) -> Optional[User]:
-        stmt = select(User).where(User.id == user_id)
+        stmt = (
+            select(User)
+            .options(joinedload(User.roles))
+            .where(User.id == user_id)
+        )
         if not include_deleted:
             stmt = stmt.where(User.deleted.is_(False))
-        return self.session.scalar(stmt)
+        return self.session.scalars(stmt).unique().first()
 
     def get_by_email(
         self,
         email: str,
         include_deleted: bool = False,
     ) -> Optional[User]:
-        stmt = select(User).where(func.lower(User.email) == email.lower().strip())
+        stmt = (
+            select(User)
+            .options(joinedload(User.roles))
+            .where(func.lower(User.email) == email.lower().strip())
+        )
         if not include_deleted:
             stmt = stmt.where(User.deleted.is_(False))
-        return self.session.scalar(stmt)
+        return self.session.scalars(stmt).unique().first()
 
     def get_by_phone(
         self,
         phone: str,
         include_deleted: bool = False,
     ) -> Optional[User]:
-        stmt = select(User).where(User.phone == phone.strip())
+        stmt = (
+            select(User)
+            .options(joinedload(User.roles))
+            .where(User.phone == phone.strip())
+        )
         if not include_deleted:
             stmt = stmt.where(User.deleted.is_(False))
-        return self.session.scalar(stmt)
+        return self.session.scalars(stmt).unique().first()
+
+    def find_conflicts(
+        self,
+        email: Optional[str] = None,
+        phone: Optional[str] = None,
+        exclude_id: Optional[uuid.UUID] = None,
+    ) -> Tuple[Optional[User], Optional[User]]:
+        conditions = []
+        if email:
+            conditions.append(func.lower(User.email) == email.lower().strip())
+        if phone:
+            conditions.append(User.phone == phone.strip())
+        if not conditions:
+            return None, None
+        stmt = select(User).where(or_(*conditions))
+        if exclude_id:
+            stmt = stmt.where(User.id != exclude_id)
+        results = list(self.session.scalars(stmt).all())
+        email_match = next((u for u in results if email and u.email.lower() == email.lower().strip()), None)
+        phone_match = next((u for u in results if phone and u.phone and u.phone.strip() == phone.strip()), None)
+        return email_match, phone_match
 
     def save(self, user: User) -> User:
         db = self.session
         db.add(user)
         db.commit()
-        db.refresh(user)
         return user
 
     def search(
@@ -59,7 +91,7 @@ class UserRepository:
         criteria: UserFilter,
     ) -> Tuple[List[User], int]:
         db = self.session
-        stmt = select(User)
+        stmt = select(User).options(selectinload(User.roles))
         count_stmt = select(func.count(User.id))
 
         if not criteria.delete:
@@ -87,8 +119,14 @@ class UserRepository:
                 return [], 0
 
         if criteria.role:
-            stmt = stmt.where(User.role == criteria.role)
-            count_stmt = count_stmt.where(User.role == criteria.role)
+            role_pattern = criteria.role.strip().upper()
+            role_filter = (
+                (UserRole.role == role_pattern)
+                & (UserRole.deleted.is_(False))
+                & (UserRole.active.is_(True))
+            )
+            stmt = stmt.where(User.roles.any(role_filter))
+            count_stmt = count_stmt.where(User.roles.any(role_filter))
 
         if criteria.email:
             stmt = stmt.where(func.lower(User.email) == criteria.email.lower().strip())

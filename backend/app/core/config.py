@@ -149,6 +149,34 @@ class Settings:
     def CORS_ORIGINS(self) -> List[str]:
         return self.get_list("CORS_ORIGINS", ["http://localhost:3000", "http://localhost:5173", "http://localhost:8000"])
 
+    @property
+    def ACCESS_TOKEN_COOKIE(self) -> str:
+        return "access_token"
+
+    @property
+    def REFRESH_TOKEN_COOKIE(self) -> str:
+        return "refresh_token"
+
+    @property
+    def JWT_SECRET(self) -> str:
+        return self.get("JWT_SECRET", "rivo_super_secret_jwt_key_2026_secure_key_128bit")
+
+    @property
+    def JWT_ALGORITHM(self) -> str:
+        return self.get("JWT_ALGORITHM", "HS256")
+
+    @property
+    def JWT_ACCESS_TOKEN_EXPIRY_MS(self) -> int:
+        return self.get_int("JWT_ACCESS_TOKEN_EXPIRY_MS", 900000)
+
+    @property
+    def JWT_REFRESH_TOKEN_EXPIRY_MS(self) -> int:
+        return self.get_int("JWT_REFRESH_TOKEN_EXPIRY_MS", 604800000)
+
+    @property
+    def JWT_COOKIE_SECURE(self) -> bool:
+        return self.get_bool("JWT_COOKIE_SECURE", False)
+
     # Database Properties
     @property
     def DB_HOST(self) -> str:

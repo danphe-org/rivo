@@ -1,5 +1,5 @@
 import uuid
-from typing import Optional
+from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.common.pagination import AbstractFilter
@@ -28,7 +28,6 @@ class UserRegisterDTO(BaseModel):
     email: EmailStr = Field(...)
     password: Optional[str] = Field(default=None, max_length=128)
     phone: Optional[str] = Field(default=None, max_length=30)
-    role: str = Field(default="USER", max_length=50)
 
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -60,12 +59,21 @@ class UserUpdateDTO(BaseModel):
         return v
 
 
+class UserRoleResponseDTO(BaseAuditSchema):
+    id: uuid.UUID = Field(...)
+    user_id: uuid.UUID = Field(...)
+    role: str = Field(...)
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class UserResponseDTO(BaseAuditSchema):
     id: uuid.UUID = Field(...)
     name: str = Field(...)
     email: str = Field(...)
     phone: Optional[str] = Field(default=None)
     role: str = Field(...)
+    roles: Optional[List[UserRoleResponseDTO]] = Field(default=None)
 
     model_config = ConfigDict(from_attributes=True)
 
