@@ -1,43 +1,50 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
+HELP.md
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
 
-# Virtual environments
-.venv/
-venv/
-ENV/
-env/
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
 
-# Environment variables & secrets
-.env
-*.env
-!.env.example
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
 
-# IDEs & Editors
-.idea/
-.vscode/
-*.swp
-*.swo
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
 
-# Databases / local storage
-*.db
-*.sqlite
-*.sqlite3
+### Compiled ###
+*.class
+*.jar
+*.war
 
-# Testing & Coverage
-.pytest_cache/
-.coverage
-htmlcov/
-
-# Logs
+### Logs ###
 *.log
+logs/
 
-# Node dependencies & builds
-node_modules/
-dist/
-dist-ssr/
-
-# OS generated files
+### OS ###
 .DS_Store
 Thumbs.db
+
+### Node ###
+node_modules/
+
+### Environment Variables ###
+.env
+!.env.example

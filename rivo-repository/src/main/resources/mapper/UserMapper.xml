@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.danphe.rivo.repository.internal.user.UserMapper">
+
+    <resultMap id="userResultMap"
+               type="com.danphe.rivo.repository.internal.user.UserEntity">
+        <id     property="id"             column="id"/>
+        <result property="name"           column="name"/>
+        <result property="email"          column="email"/>
+        <result property="password"       column="password"/>
+        <result property="phone"          column="phone"/>
+        <result property="createdOn"      column="created_on"        javaType="java.time.LocalDateTime"/>
+        <result property="createdBy"      column="created_by"/>
+        <result property="lastModifiedOn" column="last_modified_on"  javaType="java.time.LocalDateTime"/>
+        <result property="lastModifiedBy" column="last_modified_by"/>
+        <result property="deletedOn"      column="deleted_on"        javaType="java.time.LocalDateTime"/>
+        <result property="deletedBy"      column="deleted_by"/>
+        <result property="active"         column="active"/>
+        <result property="deleted"        column="deleted"/>
+        <result property="remark"         column="remark"/>
+        <result property="version"        column="version"/>
+    </resultMap>
+
+    <sql id="baseColumns">
+        id, name, email, password, phone,
+        created_on, created_by, last_modified_on, last_modified_by,
+        deleted_on, deleted_by, active, deleted, remark, version
+    </sql>
+
+    <sql id="filterWhere">
+        <where>
+            <if test="filter.id != null and filter.id != ''">
+                AND id = #{filter.id}::uuid
+            </if>
+            <if test="filter.ids != null and !filter.ids.isEmpty()">
+                AND id IN
+                <foreach item="id" collection="filter.ids" open="(" separator="," close=")">
+                    #{id}::uuid
+                </foreach>
+            </if>
+            <if test="filter.email != null and filter.email != ''">
+                AND LOWER(email) = LOWER(#{filter.email})
+            </if>
+            <if test="filter.phone != null and filter.phone != ''">
+                AND phone = #{filter.phone}
+            </if>
+            <if test="filter.role != null and filter.role != ''">
+                AND EXISTS (
+                    SELECT 1 FROM user_roles ur
+                    WHERE ur.user_id = users.id
+                      AND LOWER(ur.role) = LOWER(#{filter.role})
+                      AND ur.deleted = false
+                )
+            </if>
+            <if test="filter.active != null">
+                AND active = #{filter.active}
+            </if>
+            <choose>
+                <when test="filter.delete != null and filter.delete">
+                    AND deleted = true
+                </when>
+                <otherwise>
+                    AND deleted = false
+                </otherwise>
+            </choose>
+            <if test="filter.searchParameter != null and filter.searchParameter != ''">
+                AND (
+                    email ILIKE #{filter.searchParameter}
+                    OR name ILIKE #{filter.searchParameter}
+                    OR phone ILIKE #{filter.searchParameter}
+                )
+            </if>
+        </where>
+    </sql>
+
+    <select id="findAll" resultMap="userResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM users
+        <include refid="filterWhere"/>
+        ORDER BY ${filter.sortColumn} ${filter.sortDirection}
+        LIMIT #{filter.pageSize} OFFSET #{filter.offset}
+    </select>
+
+    <select id="findAllWithoutPagination" resultMap="userResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM users
+        <include refid="filterWhere"/>
+        ORDER BY ${filter.sortColumn} ${filter.sortDirection}
+    </select>
+
+    <select id="countAll" resultType="int">
+        SELECT COUNT(*)
+        FROM users
+        <include refid="filterWhere"/>
+    </select>
+
+    <select id="findById" resultMap="userResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM users
+        WHERE id = #{id}::uuid
+    </select>
+
+    <select id="findByEmail" resultMap="userResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM users
+        WHERE LOWER(email) = LOWER(#{email})
+    </select>
+
+    <select id="findByPhone" resultMap="userResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM users
+        WHERE phone = #{phone}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO users (
+            id, name, email, password, phone,
+            created_on, created_by, last_modified_on, last_modified_by,
+            active, deleted, remark, version
+        ) VALUES (
+            #{id}::uuid, #{name}, #{email}, #{password}, #{phone},
+            #{createdOn}, #{createdBy}, #{lastModifiedOn}, #{lastModifiedBy},
+            #{active}, #{deleted}, #{remark}, #{version}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE users
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="email != null">email = #{email},</if>
+            <if test="password != null">password = #{password},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="lastModifiedOn != null">last_modified_on = #{lastModifiedOn},</if>
+            <if test="lastModifiedBy != null">last_modified_by = #{lastModifiedBy},</if>
+            <if test="deletedOn != null">deleted_on = #{deletedOn},</if>
+            <if test="deletedBy != null">deleted_by = #{deletedBy},</if>
+            <if test="active != null">active = #{active},</if>
+            <if test="deleted != null">deleted = #{deleted},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="version != null">version = #{version},</if>
+        </set>
+        WHERE id = #{id}::uuid
+    </update>
+
+    <update id="delete">
+        UPDATE users
+        SET deleted = true,
+            active = false,
+            deleted_on = #{deletedOn},
+            deleted_by = #{deletedBy}
+        WHERE id = #{id}::uuid
+    </update>
+
+</mapper>

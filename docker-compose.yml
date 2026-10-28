@@ -1,14 +1,40 @@
 services:
-  backend:
+  rivo-web-client:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
-    image: rivo-api:latest
-    container_name: rivo-backend
+      context: .
+      dockerfile: Dockerfile.web-client
+    image: rivo-web-client:latest
+    container_name: rivo-web-client
     restart: unless-stopped
     ports:
-      - "${PORT:-8000}:8000"
+      - "${SERVER_PORT_CLIENT:-8022}:8022"
     env_file:
-      - ./backend/.env
+      - .env
+    volumes:
+      - ./logs/client:/app/logs
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - rivo-network
+
+  rivo-web-system:
+    build:
+      context: .
+      dockerfile: Dockerfile.web-system
+    image: rivo-web-system:latest
+    container_name: rivo-web-system
+    restart: unless-stopped
+    ports:
+      - "${SERVER_PORT_SYSTEM:-8021}:8021"
+    env_file:
+      - .env
+    volumes:
+      - ./logs/system:/app/logs
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - rivo-network
+
+networks:
+  rivo-network:
+    driver: bridge

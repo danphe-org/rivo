@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.danphe.rivo.repository.internal.userrole.UserRoleMapper">
+
+    <resultMap id="userRoleResultMap"
+               type="com.danphe.rivo.repository.internal.userrole.UserRoleEntity">
+        <id     property="id"             column="id"/>
+        <result property="userId"         column="user_id"/>
+        <result property="role"           column="role"/>
+        <result property="createdOn"      column="created_on"        javaType="java.time.LocalDateTime"/>
+        <result property="createdBy"      column="created_by"/>
+        <result property="lastModifiedOn" column="last_modified_on"  javaType="java.time.LocalDateTime"/>
+        <result property="lastModifiedBy" column="last_modified_by"/>
+        <result property="deletedOn"      column="deleted_on"        javaType="java.time.LocalDateTime"/>
+        <result property="deletedBy"      column="deleted_by"/>
+        <result property="active"         column="active"/>
+        <result property="deleted"        column="deleted"/>
+        <result property="remark"         column="remark"/>
+        <result property="version"        column="version"/>
+    </resultMap>
+
+    <sql id="baseColumns">
+        id, user_id, role,
+        created_on, created_by, last_modified_on, last_modified_by,
+        deleted_on, deleted_by, active, deleted, remark, version
+    </sql>
+
+    <select id="findById" resultMap="userRoleResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM user_roles
+        WHERE id = #{id}::uuid
+    </select>
+
+    <select id="findByUserId" resultMap="userRoleResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM user_roles
+        WHERE user_id = #{userId}::uuid
+          AND deleted = false
+        ORDER BY created_on ASC
+    </select>
+
+    <select id="findAllByUserIdIn" resultMap="userRoleResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM user_roles
+        WHERE user_id IN
+        <foreach item="uid" collection="userIds" open="(" separator="," close=")">
+            #{uid}::uuid
+        </foreach>
+          AND deleted = false
+        ORDER BY created_on ASC
+    </select>
+
+    <insert id="insert">
+        INSERT INTO user_roles (
+            id, user_id, role,
+            created_on, created_by, last_modified_on, last_modified_by,
+            active, deleted, remark, version
+        ) VALUES (
+            #{id}::uuid, #{userId}::uuid, #{role},
+            #{createdOn}, #{createdBy}, #{lastModifiedOn}, #{lastModifiedBy},
+            #{active}, #{deleted}, #{remark}, #{version}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE user_roles
+        <set>
+            <if test="role != null">role = #{role},</if>
+            <if test="lastModifiedOn != null">last_modified_on = #{lastModifiedOn},</if>
+            <if test="lastModifiedBy != null">last_modified_by = #{lastModifiedBy},</if>
+            <if test="deletedOn != null">deleted_on = #{deletedOn},</if>
+            <if test="deletedBy != null">deleted_by = #{deletedBy},</if>
+            <if test="active != null">active = #{active},</if>
+            <if test="deleted != null">deleted = #{deleted},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="version != null">version = #{version},</if>
+        </set>
+        WHERE id = #{id}::uuid
+    </update>
+
+    <update id="delete">
+        UPDATE user_roles
+        SET deleted = true,
+            active = false,
+            deleted_on = #{deletedOn},
+            deleted_by = #{deletedBy}
+        WHERE id = #{id}::uuid
+    </update>
+
+    <update id="deleteByUserId">
+        UPDATE user_roles
+        SET deleted = true,
+            active = false,
+            deleted_on = NOW()
+        WHERE user_id = #{userId}::uuid
+    </update>
+
+</mapper>

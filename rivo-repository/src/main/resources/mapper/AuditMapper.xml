@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.danphe.rivo.repository.internal.auditlog.AuditLogsMapper">
+
+    <resultMap id="auditResultMap"
+               type="com.danphe.rivo.common.audits.AuditEntity">
+        <result column="id" property="id"/>
+        <result column="entity_key" property="entityKey"/>
+        <result column="request_type" property="requestType"/>
+        <result column="new_data" property="newEntity"/>
+        <result column="old_data" property="oldEntity"/>
+        <result column="requested_by" property="requestedBy"/>
+        <result column="requested_on" property="requestedOn" javaType="java.time.LocalDateTime"/>
+        <result column="responded_by" property="respondedBy"/>
+        <result column="responded_on" property="respondedOn" javaType="java.time.LocalDateTime"/>
+        <result column="remarks" property="remarks"/>
+        <result column="entity" property="entity"/>
+        <result column="resource" property="resource"/>
+    </resultMap>
+
+    <insert id="insert">
+        INSERT INTO audit_logs(id, entity_key, request_type,
+                              new_data, old_data, requested_by,
+                              requested_on, responded_by, responded_on, remarks, entity, resource)
+        VALUES (#{id}, #{entityKey}, #{requestType}, #{newEntity}::JSONB,
+                #{oldEntity}::JSONB, #{requestedBy}, #{requestedOn}, #{respondedBy}, #{respondedOn}, #{remarks},
+                #{entity}, #{resource})
+    </insert>
+
+    <insert id="insertBulk">
+        INSERT INTO audit_logs(id, entity_key, request_type,
+        new_data, old_data, requested_by,
+        requested_on, responded_by, responded_on, remarks, entity, resource)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.id}, #{item.entityKey}, #{item.requestType}, #{item.newEntity}::JSONB,
+            #{item.oldEntity}::JSONB, #{item.requestedBy}, #{item.requestedOn}, #{item.respondedBy}, #{item.respondedOn}, #{item.remarks},
+            #{item.entity}, #{item.resource})
+        </foreach>
+    </insert>
+
+</mapper>

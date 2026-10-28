@@ -1,0 +1,30 @@
+FROM eclipse-temurin:25-jdk-noble AS builder
+WORKDIR /app
+
+COPY .mvn .mvn
+COPY mvnw pom.xml ./
+COPY rivo-common/pom.xml rivo-common/
+COPY rivo-repository/pom.xml rivo-repository/
+COPY rivo-service/pom.xml rivo-service/
+COPY rivo-web-client/pom.xml rivo-web-client/
+COPY rivo-web-system/pom.xml rivo-web-system/
+
+COPY . .
+
+RUN ./mvnw clean package -DskipTests
+
+FROM eclipse-temurin:25-jre-noble
+WORKDIR /app
+
+RUN mkdir -p /app/logs
+
+COPY --from=builder /app/build/web-system.jar app.jar
+
+EXPOSE 8021
+
+VOLUME ["/app/logs"]
+
+ENTRYPOINT ["java", \
+    "-XX:+UseContainerSupport", \
+    "-XX:MaxRAMPercentage=75.0", \
+    "-jar", "app.jar"]

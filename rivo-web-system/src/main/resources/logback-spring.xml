@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+  <springProperty scope="context" name="appName" source="spring.application.name"/>
+  <springProperty scope="context" name="logDir"  source="log.dir" defaultValue="logs"/>
+
+  <logger name="org.apache.catalina"                    level="WARN"/>
+  <logger name="org.apache.tomcat"                      level="WARN"/>
+  <logger name="org.springframework.web.servlet"        level="WARN"/>
+  <logger name="org.springframework.security"           level="WARN"/>
+  <logger name="org.springframework.boot.autoconfigure" level="WARN"/>
+  <logger name="org.springframework.boot.devtools"      level="WARN"/>
+  <logger name="org.springframework.boot.actuate"       level="WARN"/>
+  <logger name="org.springframework.modulith"           level="WARN"/>
+  <logger name="com.zaxxer.hikari"                      level="WARN"/>
+  <logger name="org.mybatis"                            level="WARN"/>
+
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} %-5level [requestId:%X{requestId:--}] [sid:%X{sessionId:--}] [ip:%X{ip:--}] [user:%X{user:--}] %-40.40logger{39} %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${logDir}/${appName}.log</file>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${logDir}/${appName}.%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+      <maxHistory>30</maxHistory>
+      <totalSizeCap>1GB</totalSizeCap>
+    </rollingPolicy>
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} %-5level [requestId:%X{requestId:--}] [sid:%X{sessionId:--}] [ip:%X{ip:--}] [user:%X{user:--}] %-40.40logger{39} %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+    <queueSize>512</queueSize>
+    <discardingThreshold>0</discardingThreshold>
+    <neverBlock>true</neverBlock>
+    <appender-ref ref="FILE"/>
+  </appender>
+
+  <root level="INFO">
+    <appender-ref ref="CONSOLE"/>
+    <appender-ref ref="ASYNC_FILE"/>
+  </root>
+
+</configuration>

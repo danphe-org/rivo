@@ -1,8 +1,0 @@
-fastapi[standard]
-uvicorn
-sqlalchemy
-alembic
-psycopg2-binary
-pydantic-settings
-bcrypt
-pyjwt
