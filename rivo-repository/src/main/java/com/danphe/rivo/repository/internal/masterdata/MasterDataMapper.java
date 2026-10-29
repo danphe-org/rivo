@@ -16,7 +16,9 @@ public interface MasterDataMapper {
 
   MasterDataEntity findById(@Param("id") String id);
 
-  MasterDataEntity findByCode(@Param("code") String code);
+  List<MasterDataEntity> findByCode(@Param("code") String code);
+
+  MasterDataEntity findByCodeAndTitle(@Param("code") String code, @Param("title") String title);
 
   List<MasterDataEntity> findAll(@Param("filter") MasterDataFilter filter);
 

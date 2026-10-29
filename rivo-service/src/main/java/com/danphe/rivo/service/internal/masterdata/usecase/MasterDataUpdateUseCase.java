@@ -33,15 +33,19 @@ public class MasterDataUpdateUseCase
         .filter(r -> !r.isDeleted())
         .orElseThrow(() -> new NotFoundException("Master data not found with id: " + req.getId()));
 
-    if (req.getCode() != null && !req.getCode().isBlank()) {
-      String normalizedCode = req.getCode().trim().toUpperCase();
-      if (!normalizedCode.equalsIgnoreCase(old.getCode())) {
-        repository.findByCode(normalizedCode).ifPresent(existing -> {
-          if (!existing.getId().equalsIgnoreCase(req.getId())) {
-            throw new AppException("Master data with code '" + normalizedCode + "' already exists");
-          }
-        });
-      }
+    String targetCode = (req.getCode() != null && !req.getCode().isBlank())
+        ? req.getCode().trim().toUpperCase()
+        : old.getCode();
+    String targetTitle = (req.getTitle() != null && !req.getTitle().isBlank())
+        ? req.getTitle().trim()
+        : old.getTitle();
+
+    if (!targetCode.equalsIgnoreCase(old.getCode()) || !targetTitle.equalsIgnoreCase(old.getTitle())) {
+      repository.findByCodeAndTitle(targetCode, targetTitle).ifPresent(existing -> {
+        if (!existing.getId().equalsIgnoreCase(req.getId())) {
+          throw new AppException("Master data with title '" + targetTitle + "' already exists under code '" + targetCode + "'");
+        }
+      });
     }
   }
 

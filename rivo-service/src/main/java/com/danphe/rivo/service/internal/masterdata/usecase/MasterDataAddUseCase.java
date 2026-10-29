@@ -28,8 +28,9 @@ public class MasterDataAddUseCase
   @Override
   protected void validate(MasterDataDomain req) {
     String normalizedCode = req.getCode() != null ? req.getCode().trim().toUpperCase() : "";
-    if (repository.findByCode(normalizedCode).isPresent()) {
-      throw new AppException("Master data with code '" + normalizedCode + "' already exists");
+    String normalizedTitle = req.getTitle() != null ? req.getTitle().trim() : "";
+    if (repository.findByCodeAndTitle(normalizedCode, normalizedTitle).isPresent()) {
+      throw new AppException("Master data with title '" + normalizedTitle + "' already exists under code '" + normalizedCode + "'");
     }
   }
 

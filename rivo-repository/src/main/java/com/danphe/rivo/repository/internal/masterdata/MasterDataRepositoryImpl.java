@@ -57,8 +57,13 @@ public class MasterDataRepositoryImpl implements MasterDataRepository {
   }
 
   @Override
-  public Optional<MasterDataDomain> findByCode(String code) {
-    return Optional.ofNullable(mapper.findByCode(code)).map(converter::toDomain);
+  public List<MasterDataDomain> findByCode(String code) {
+    return converter.toDomainList(mapper.findByCode(code));
+  }
+
+  @Override
+  public Optional<MasterDataDomain> findByCodeAndTitle(String code, String title) {
+    return Optional.ofNullable(mapper.findByCodeAndTitle(code, title)).map(converter::toDomain);
   }
 
   @Override

@@ -275,17 +275,17 @@ Used exclusively by the back-office / admin portal on port 8021.
 - **Authority / Permission**: Administrative / System User (🔒 **ROLE_RESTRICTED**: `SYSTEM_USER`, `ADMIN`, `STAFF`)
 - **Method**: `POST`
 - **Path**: `/api/system/master-data`
-- **Description**: Creates a new master data entry for system lookups (e.g. categories, games, types).
+- **Description**: Creates a new master data entry for system lookups (e.g. categories, games, types). The `code` field represents the grouping category (e.g. `GAME`, `CATEGORY`, `POSITION`) and can be repeated across multiple entries. The combination of `(code, title)` is unique among non-deleted entries.
 - **Request Body (`MasterDataCreateDto`)**:
   ```json
   {
     "title": "Futsal",
-    "code": "FUTSAL"
+    "code": "GAME"
   }
   ```
 - **Fields & Validations (`MasterDataCreateDto`)**:
   - `title`: string, **required**, `@NotBlank`, `@Size(max = 255)`
-  - `code`: string, **required**, `@NotBlank`, `@Size(max = 100)`, must be unique across non-deleted entries (automatically normalized to uppercase)
+  - `code`: string, **required**, `@NotBlank`, `@Size(max = 100)`, represents the category/grouping code (automatically normalized to uppercase). Multiple titles can belong to the same code category.
 - **Response**: `200 OK`
   ```json
   {
@@ -294,7 +294,7 @@ Used exclusively by the back-office / admin portal on port 8021.
     "data": {
       "id": "c1f7a61d-8692-426b-80a9-19601d3cb863",
       "title": "Futsal",
-      "code": "FUTSAL",
+      "code": "GAME",
       "created_on": "2026-10-29T16:15:00",
       "modified_on": "2026-10-29T16:15:00",
       "created_by": "e8334460-aefb-4171-872f-5ea3b1187c32",
@@ -319,7 +319,7 @@ Used exclusively by the back-office / admin portal on port 8021.
     "data": {
       "id": "c1f7a61d-8692-426b-80a9-19601d3cb863",
       "title": "Futsal",
-      "code": "FUTSAL",
+      "code": "GAME",
       "created_on": "2026-10-29T16:15:00",
       "modified_on": "2026-10-29T16:15:00",
       "created_by": "e8334460-aefb-4171-872f-5ea3b1187c32",
@@ -331,7 +331,42 @@ Used exclusively by the back-office / admin portal on port 8021.
   }
   ```
 
-### 2.14 Update Master Data (`PUT /api/system/master-data/{id}`)
+### 2.14 Get Master Data by Code (`GET /api/system/master-data/code/{code}`)
+- **Authority / Permission**: Administrative / System User (🔒 **ROLE_RESTRICTED**: `SYSTEM_USER`, `ADMIN`, `STAFF`)
+- **Method**: `GET`
+- **Path**: `/api/system/master-data/code/{code}`
+- **Path Parameters**: `code` (string, e.g. `GAME`, `CATEGORY`)
+- **Description**: Returns all non-deleted master data items under the specified code category ordered by title.
+- **Response**: `200 OK` (`List<MasterDataResponseDto>`)
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": [
+      {
+        "id": "c1f7a61d-8692-426b-80a9-19601d3cb863",
+        "title": "Basketball",
+        "code": "GAME",
+        "created_on": "2026-10-29T16:15:00",
+        "modified_on": "2026-10-29T16:15:00",
+        "active": true,
+        "deleted": false
+      },
+      {
+        "id": "d2e8b72e-9703-537c-91ba-20712e4dc974",
+        "title": "Futsal",
+        "code": "GAME",
+        "created_on": "2026-10-29T16:16:00",
+        "modified_on": "2026-10-29T16:16:00",
+        "active": true,
+        "deleted": false
+      }
+    ],
+    "time": "2026-10-29T16:16:00.123456"
+  }
+  ```
+
+### 2.15 Update Master Data (`PUT /api/system/master-data/{id}`)
 - **Authority / Permission**: Administrative / System User (🔒 **ROLE_RESTRICTED**: `SYSTEM_USER`, `ADMIN`, `STAFF`)
 - **Method**: `PUT`
 - **Path**: `/api/system/master-data/{id}`
@@ -340,15 +375,15 @@ Used exclusively by the back-office / admin portal on port 8021.
   ```json
   {
     "title": "5v5 Futsal",
-    "code": "FUTSAL_5V5"
+    "code": "GAME"
   }
   ```
 - **Fields & Validations (`MasterDataUpdateDto`)**:
   - `title`: string, optional, `@Size(max = 255)`
-  - `code`: string, optional, `@Size(max = 100)`, must be unique
+  - `code`: string, optional, `@Size(max = 100)`
 - **Response**: `200 OK` (`MasterDataResponseDto`)
 
-### 2.15 Delete Master Data (`DELETE /api/system/master-data/{id}`)
+### 2.16 Delete Master Data (`DELETE /api/system/master-data/{id}`)
 - **Authority / Permission**: Administrative / System User (🔒 **ROLE_RESTRICTED**: `SYSTEM_USER`, `ADMIN`, `STAFF`)
 - **Method**: `DELETE`
 - **Path**: `/api/system/master-data/{id}`
@@ -363,7 +398,7 @@ Used exclusively by the back-office / admin portal on port 8021.
   }
   ```
 
-### 2.16 Search Master Data (`POST /api/system/master-data/search`)
+### 2.17 Search Master Data (`POST /api/system/master-data/search`)
 - **Authority / Permission**: Administrative / System User (🔒 **ROLE_RESTRICTED**: `SYSTEM_USER`, `ADMIN`, `STAFF`)
 - **Method**: `POST`
 - **Path**: `/api/system/master-data/search`
@@ -374,7 +409,7 @@ Used exclusively by the back-office / admin portal on port 8021.
     "pageSize": 10,
     "searchParameter": "Futsal",
     "title": "Futsal",
-    "code": "FUTSAL",
+    "code": "GAME",
     "sortField": "created_on",
     "sortOrder": "DESC",
     "active": true

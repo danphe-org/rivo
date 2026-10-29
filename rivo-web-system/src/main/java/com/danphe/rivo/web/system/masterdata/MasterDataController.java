@@ -8,6 +8,7 @@ import com.danphe.rivo.common.user.UserDomain;
 import com.danphe.rivo.service.api.MasterDataService;
 import com.danphe.rivo.web.system.security.SystemUserPrincipal;
 import jakarta.validation.Valid;
+import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -47,6 +48,15 @@ public class MasterDataController {
     UserDomain actor = principal != null ? principal.getUser() : null;
     MasterDataDomain domain = service.getById(id, actor);
     return RestResponse.ok(MasterDataResponseDto.from(domain));
+  }
+
+  @GetMapping("/code/{code}")
+  public ResponseEntity<?> getByCode(
+      @PathVariable String code,
+      @AuthenticationPrincipal SystemUserPrincipal principal) {
+    UserDomain actor = principal != null ? principal.getUser() : null;
+    List<MasterDataDomain> list = service.getByCode(code, actor);
+    return RestResponse.ok(list.stream().map(MasterDataResponseDto::from).toList());
   }
 
   @PutMapping("/{id}")

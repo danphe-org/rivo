@@ -13,6 +13,7 @@ import com.danphe.rivo.service.internal.masterdata.usecase.MasterDataDeleteUseCa
 import com.danphe.rivo.service.internal.masterdata.usecase.MasterDataGetUseCase;
 import com.danphe.rivo.service.internal.masterdata.usecase.MasterDataSearchUseCase;
 import com.danphe.rivo.service.internal.masterdata.usecase.MasterDataUpdateUseCase;
+import java.util.List;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -39,6 +40,11 @@ public class MasterDataServiceImpl implements MasterDataService {
   @Override
   public MasterDataDomain getById(String id, UserDomain actor) {
     return new MasterDataGetUseCase(repository, actor).execute(id);
+  }
+
+  @Override
+  public List<MasterDataDomain> getByCode(String code, UserDomain actor) {
+    return repository.findByCode(code);
   }
 
   @Override

@@ -90,6 +90,16 @@
         FROM master_data
         WHERE UPPER(code) = UPPER(#{code})
           AND deleted = false
+        ORDER BY title ASC
+    </select>
+
+    <select id="findByCodeAndTitle" resultMap="masterDataResultMap">
+        SELECT <include refid="selectColumns"/>
+        FROM master_data
+        WHERE UPPER(code) = UPPER(#{code})
+          AND LOWER(title) = LOWER(#{title})
+          AND deleted = false
+        LIMIT 1
     </select>
 
     <insert id="insert">
