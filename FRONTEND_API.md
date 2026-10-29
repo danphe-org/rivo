@@ -271,6 +271,142 @@ Used exclusively by the back-office / admin portal on port 8021.
 - **Path**: `/api/system/users/list` or `/api/system/users`
 - **Response**: `200 OK` (`Page<UserResponse>`)
 
+### 2.12 Create Master Data (`POST /api/system/master-data`)
+- **Authority / Permission**: Administrative / System User (🔒 **ROLE_RESTRICTED**: `SYSTEM_USER`, `ADMIN`, `STAFF`)
+- **Method**: `POST`
+- **Path**: `/api/system/master-data`
+- **Description**: Creates a new master data entry for system lookups (e.g. categories, games, types).
+- **Request Body (`MasterDataCreateDto`)**:
+  ```json
+  {
+    "title": "Futsal",
+    "code": "FUTSAL"
+  }
+  ```
+- **Fields & Validations (`MasterDataCreateDto`)**:
+  - `title`: string, **required**, `@NotBlank`, `@Size(max = 255)`
+  - `code`: string, **required**, `@NotBlank`, `@Size(max = 100)`, must be unique across non-deleted entries (automatically normalized to uppercase)
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": {
+      "id": "c1f7a61d-8692-426b-80a9-19601d3cb863",
+      "title": "Futsal",
+      "code": "FUTSAL",
+      "created_on": "2026-10-29T16:15:00",
+      "modified_on": "2026-10-29T16:15:00",
+      "created_by": "e8334460-aefb-4171-872f-5ea3b1187c32",
+      "modified_by": "e8334460-aefb-4171-872f-5ea3b1187c32",
+      "active": true,
+      "deleted": false
+    },
+    "time": "2026-10-29T16:15:00.123456"
+  }
+  ```
+
+### 2.13 Get Master Data by ID (`GET /api/system/master-data/{id}`)
+- **Authority / Permission**: Administrative / System User (🔒 **ROLE_RESTRICTED**: `SYSTEM_USER`, `ADMIN`, `STAFF`)
+- **Method**: `GET`
+- **Path**: `/api/system/master-data/{id}`
+- **Path Parameters**: `id` (UUID string)
+- **Response**: `200 OK` (`MasterDataResponseDto`)
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": {
+      "id": "c1f7a61d-8692-426b-80a9-19601d3cb863",
+      "title": "Futsal",
+      "code": "FUTSAL",
+      "created_on": "2026-10-29T16:15:00",
+      "modified_on": "2026-10-29T16:15:00",
+      "created_by": "e8334460-aefb-4171-872f-5ea3b1187c32",
+      "modified_by": "e8334460-aefb-4171-872f-5ea3b1187c32",
+      "active": true,
+      "deleted": false
+    },
+    "time": "2026-10-29T16:15:00.123456"
+  }
+  ```
+
+### 2.14 Update Master Data (`PUT /api/system/master-data/{id}`)
+- **Authority / Permission**: Administrative / System User (🔒 **ROLE_RESTRICTED**: `SYSTEM_USER`, `ADMIN`, `STAFF`)
+- **Method**: `PUT`
+- **Path**: `/api/system/master-data/{id}`
+- **Path Parameters**: `id` (UUID string)
+- **Request Body (`MasterDataUpdateDto`)**:
+  ```json
+  {
+    "title": "5v5 Futsal",
+    "code": "FUTSAL_5V5"
+  }
+  ```
+- **Fields & Validations (`MasterDataUpdateDto`)**:
+  - `title`: string, optional, `@Size(max = 255)`
+  - `code`: string, optional, `@Size(max = 100)`, must be unique
+- **Response**: `200 OK` (`MasterDataResponseDto`)
+
+### 2.15 Delete Master Data (`DELETE /api/system/master-data/{id}`)
+- **Authority / Permission**: Administrative / System User (🔒 **ROLE_RESTRICTED**: `SYSTEM_USER`, `ADMIN`, `STAFF`)
+- **Method**: `DELETE`
+- **Path**: `/api/system/master-data/{id}`
+- **Path Parameters**: `id` (UUID string)
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": null,
+    "time": "2026-10-29T16:15:00.123456"
+  }
+  ```
+
+### 2.16 Search Master Data (`POST /api/system/master-data/search`)
+- **Authority / Permission**: Administrative / System User (🔒 **ROLE_RESTRICTED**: `SYSTEM_USER`, `ADMIN`, `STAFF`)
+- **Method**: `POST`
+- **Path**: `/api/system/master-data/search`
+- **Request Body (`MasterDataFilter`)**:
+  ```json
+  {
+    "pageNumber": 1,
+    "pageSize": 10,
+    "searchParameter": "Futsal",
+    "title": "Futsal",
+    "code": "FUTSAL",
+    "sortField": "created_on",
+    "sortOrder": "DESC",
+    "active": true
+  }
+  ```
+- **Response**: `200 OK` (`Page<MasterDataResponseDto>`)
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": {
+      "totalRecords": 1,
+      "limit": 10,
+      "currentPage": 1,
+      "data": [
+        {
+          "id": "c1f7a61d-8692-426b-80a9-19601d3cb863",
+          "title": "Futsal",
+          "code": "FUTSAL",
+          "created_on": "2026-10-29T16:15:00",
+          "modified_on": "2026-10-29T16:15:00",
+          "created_by": "e8334460-aefb-4171-872f-5ea3b1187c32",
+          "modified_by": "e8334460-aefb-4171-872f-5ea3b1187c32",
+          "active": true,
+          "deleted": false
+        }
+      ]
+    },
+    "time": "2026-10-29T16:15:00.123456"
+  }
+  ```
+
 ---
 
 ## 3. Client Portal APIs (`/api/client`)
@@ -380,6 +516,152 @@ Used by the client / store / customer portal on port 8022.
 - **Restrictions**: Client users cannot update `role` or `active` status.
 - **Authorization & Usecase Validation**: Client users can **only update their own data**. Attempting to update another user returns `403 Forbidden`.
 - **Response**: `200 OK` (`UserResponse`)
+
+### 3.11 Create Match Request (`POST /api/client/match-requests`)
+- **Authority / Permission**: Authenticated (🔑 **AUTHENTICATED**)
+- **Method**: `POST`
+- **Path**: `/api/client/match-requests`
+- **Description**: Creates a new match request looking for opponents or teammates. Only logged-in users can create requests. `requested_by` is automatically set to the authenticated user.
+- **Request Body (`MatchRequestCreateDto`)**:
+  ```json
+  {
+    "game": "Futsal",
+    "request_type": "OPPONENT",
+    "category": "5v5 Casual",
+    "message": "Looking for a competitive 5v5 team tonight!",
+    "time": "2026-10-28T19:00:00",
+    "urgent": true
+  }
+  ```
+- **Fields & Validations (`MatchRequestCreateDto`)**:
+  - `game`: string, **required**, `@NotBlank`, `@Size(max = 100)`
+  - `request_type`: string, **required**, `@NotNull`, `@Pattern("OPPONENT|TEAMMATE")`
+  - `category`: string, optional, `@Size(max = 100)`
+  - `message`: string, optional, `@Size(max = 2000)`
+  - `time`: string (ISO-8601 date-time), optional scheduled match time
+  - `urgent`: boolean, optional (defaults to `false`)
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": {
+      "id": "e8334460-aefb-4171-872f-5ea3b1187c32",
+      "requested_by": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "request_type": "OPPONENT",
+      "status": "OPEN",
+      "game": "Futsal",
+      "category": "5v5 Casual",
+      "message": "Looking for a competitive 5v5 team tonight!",
+      "time": "2026-10-28T19:00:00",
+      "urgent": true,
+      "created_on": "2026-10-28T14:40:00",
+      "modified_on": "2026-10-28T14:40:00",
+      "created_by": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "modified_by": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "active": true,
+      "deleted": false
+    },
+    "time": "2026-10-28T14:40:00.123456"
+  }
+  ```
+
+### 3.12 Get Match Request by ID (`GET /api/client/match-requests/{id}`)
+- **Authority / Permission**: Authenticated (🔑 **AUTHENTICATED**)
+- **Method**: `GET`
+- **Path**: `/api/client/match-requests/{id}`
+- **Response**: `200 OK` (`MatchRequestResponseDto`)
+
+### 3.13 Update Match Request by ID (`PUT /api/client/match-requests/{id}`)
+- **Authority / Permission**: Authenticated (🔑 **AUTHENTICATED**)
+- **Method**: `PUT`
+- **Path**: `/api/client/match-requests/{id}`
+- **Authorization & Usecase Validation**: Only the user who **created** the request can update it. Any other user attempting to update it receives `403 Forbidden` (`"Access denied: You can only update match requests you have created"`).
+- **Request Body (`MatchRequestUpdateDto`)**:
+  ```json
+  {
+    "game": "Futsal",
+    "request_type": "OPPONENT",
+    "status": "OPEN",
+    "category": "5v5 Friendly",
+    "message": "Updated match notes",
+    "time": "2026-10-28T20:00:00",
+    "urgent": false
+  }
+  ```
+- **Fields & Validations (`MatchRequestUpdateDto`)**:
+  - `game`: string, optional, `@Size(max = 100)`
+  - `request_type`: string, optional, `@Pattern("OPPONENT|TEAMMATE")`
+  - `status`: string, optional, `@Pattern("OPEN|MATCHED|FILLED|CANCELLED|COMPLETED")`
+  - `category`: string, optional, `@Size(max = 100)`
+  - `message`: string, optional, `@Size(max = 2000)`
+  - `time`: string (ISO-8601 date-time), optional
+  - `urgent`: boolean, optional
+- **Response**: `200 OK` (`MatchRequestResponseDto`)
+
+### 3.14 Delete Match Request by ID (`DELETE /api/client/match-requests/{id}`)
+- **Authority / Permission**: Authenticated (🔑 **AUTHENTICATED**)
+- **Method**: `DELETE`
+- **Path**: `/api/client/match-requests/{id}`
+- **Authorization & Usecase Validation**: Only the user who **created** the request can delete it. Any other user attempting to delete it receives `403 Forbidden` (`"Access denied: You can only delete match requests you have created"`).
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": null,
+    "time": "2026-10-28T14:45:00.123456"
+  }
+  ```
+
+### 3.15 Search Match Requests (`POST /api/client/match-requests/search`)
+- **Authority / Permission**: Authenticated (🔑 **AUTHENTICATED**)
+- **Method**: `POST`
+- **Path**: `/api/client/match-requests/search`
+- **Request Body (`MatchRequestFilter`)**:
+  ```json
+  {
+    "pageNumber": 1,
+    "pageSize": 10,
+    "sortField": "created_on",
+    "sortOrder": "DESC",
+    "game": "Futsal",
+    "requestType": "OPPONENT",
+    "status": "OPEN",
+    "urgent": true,
+    "requestedBy": "optional-user-id"
+  }
+  ```
+- **Response**: `200 OK` (`Page<MatchRequestResponseDto>`)
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": {
+      "totalRecords": 1,
+      "limit": 10,
+      "currentPage": 1,
+      "data": [
+        {
+          "id": "e8334460-aefb-4171-872f-5ea3b1187c32",
+          "requested_by": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "request_type": "OPPONENT",
+          "status": "OPEN",
+          "game": "Futsal",
+          "category": "5v5 Casual",
+          "message": "Looking for a competitive 5v5 team tonight!",
+          "time": "2026-10-28T19:00:00",
+          "urgent": true,
+          "created_on": "2026-10-28T14:40:00",
+          "modified_on": "2026-10-28T14:40:00",
+          "active": true,
+          "deleted": false
+        }
+      ]
+    },
+    "time": "2026-10-28T14:45:00.123456"
+  }
+  ```
 
 ---
 

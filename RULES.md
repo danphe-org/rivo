@@ -42,14 +42,21 @@ Dependencies flow strictly from outer to inner layers in a unidirectional pipeli
      - Never import `service` or `api` inside repositories.
 
 3. **`app/service/` (or module services and use cases)**
-   - **Contains**: Dedicated UseCase classes (`usecases.py`) and orchestrating service classes (`service.py`).
+   - **Contains**: Dedicated UseCase classes (`usecase/` or `usecases.py`) and orchestrating service classes (`service.py` or `ServiceImpl.java`).
    - **Strict Rule**:
      - Allowed dependencies: **`app/common/` and `app/repository/`**.
      - Must **NEVER** import from `app/api/` (web layer).
      - Controllers must not contain business logic; all logic belongs in services/UseCases.
-     - **All validations take place in UseCases, NOT in services**:
-       - Base `UseCase[Rq, Rp]` provides the `validate(request)` hook.
-       - Every concrete UseCase **MUST extend and implement `validate(request)`** to perform domain validations, existence checks, uniqueness constraints, and invariant verifications (raising `AppException` or `NotFoundException`).
+     - **Validation Separation Policy (NEVER duplicate validations)**:
+       - **Security & Route Authorization**: Handled at the web/security layer via `SecurityConfig` and method security (`@PreAuthorize`). Do NOT check whether the user is authenticated (e.g. `actor == null`) inside UseCase `validate()`.
+       - **Request DTOs / Records (`*Dto.java` or schemas)**: Validate all structural, nullability, blank, length, and range constraints directly on the request record using bean validation annotations (`@NotNull`, `@NotBlank`, `@Size(min, max)`, `@Min`, `@Max`, `@Pattern`).
+       - **UseCases `validate(request)` Hook**: Do **NOT** re-check authentication or re-validate null, blank, min, or max in `validate()` (re-checking causes unnecessary overhead and slow processing).
+       - **What belongs in UseCase `validate(request)`**:
+         - **Duplicate / Uniqueness Checks**: Querying repositories to verify unique fields (e.g. code, email, duplicate requests) do not already exist.
+         - **Entity Existence & Status**: Verifying target records exist in database and are not soft-deleted.
+         - **Calculations & Domain Invariants**: Cross-field business rules, mathematical calculations, quota checks, state machine transitions.
+         - **Resource Ownership Rules**: Verifying that a non-admin actor owns the specific database record being modified/deleted.
+       - Base `UseCase[Rq, Rp]` provides the `validate(request)` hook. Every concrete UseCase **MUST extend and implement `validate(request)`** for domain validations.
        - Services act as orchestrators delegating workflow execution to UseCases and must NOT contain inline validation logic.
 
 4. **`app/api/` (System & Client Portals)**
@@ -72,14 +79,15 @@ Whenever creating a new domain entity or feature module (e.g. `products`, `order
 Step 1: Define Model (app/common/models.py or app/modules/<feature>/models.py)
    │    └─ Must extend BaseModel (inherits UUID primary key & full audit trail)
    ▼
-Step 2: Define Schemas & DTOs (app/modules/<feature>/schemas.py)
-   │    └─ Request DTOs, Response DTOs, and FeatureFilter extending AbstractFilter
+Step 2: Define Schemas & DTOs (app/modules/<feature>/schemas.py or DTO records)
+   │    └─ Request DTOs (with @NotNull, @NotBlank, @Size, @Min, @Max validations), Response DTOs, and FeatureFilter extending AbstractFilter
    ▼
 Step 3: Define Repository (app/modules/<feature>/repository.py)
    │    └─ Queries, pagination, filtering, persistence
    ▼
 Step 4: Define UseCases & Service (app/modules/<feature>/usecases.py & service.py)
-   │    ├─ Concrete UseCases extending UseCase[Rq, Rp] implementing validations in validate() hook
+   │    ├─ Concrete UseCases extending UseCase[Rq, Rp] implementing domain validations in validate() hook:
+   │    │  (Duplicate/uniqueness checks, existence, calculations, invariants, authorization ONLY — DO NOT re-check null/blank/min/max)
    │    └─ Service class delegating operations to UseCases (zero inline validations in service)
    ▼
 Step 5: Define API Routes (app/api/system/<feature>.py or app/api/client/<feature>.py)
@@ -210,4 +218,8 @@ Before concluding any backend coding task:
    - If 5 records are not sufficient to verify a scenario, pause and ask the user how many more test records to use.
 6. **Strict Prohibition on Running Tests**:
    - The agent must **NEVER** run tests on its own under any circumstances. All tests are turned off for the agent; the user will test everything manually.
+7. **Strict Prohibition on Redundant Auth & Null/Blank/Min/Max in UseCases**:
+   - Authentication and route authorization are enforced globally by Spring Security (`SecurityConfig` / `@PreAuthorize`). Never re-check if the actor is authenticated (`actor == null`, `actor.getId() == null`) in UseCase `validate()`.
+   - Never re-check null, blank, string lengths, or min/max values in UseCase `validate()` when they are already validated by the Request DTO record.
+   - UseCase `validate()` must strictly be reserved for duplicate value checks against repositories, database lookups, business logic calculations, state transitions, and resource ownership checks.
 

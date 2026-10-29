@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.danphe.rivo.repository.internal.matchrequest.MatchRequestMapper">
+
+    <resultMap id="matchRequestResultMap"
+               type="com.danphe.rivo.repository.internal.matchrequest.MatchRequestEntity">
+        <id     property="id"               column="id"/>
+        <result property="requestedBy"      column="requested_by"/>
+        <result property="requestType"      column="request_type"/>
+        <result property="status"           column="status"/>
+        <result property="game"             column="game"/>
+        <result property="category"         column="category"/>
+        <result property="message"          column="message"/>
+        <result property="time"             column="time"              javaType="java.time.LocalDateTime"/>
+        <result property="urgent"           column="urgent"/>
+        <result property="createdOn"        column="created_on"        javaType="java.time.LocalDateTime"/>
+        <result property="createdBy"        column="created_by"/>
+        <result property="lastModifiedOn"   column="last_modified_on"  javaType="java.time.LocalDateTime"/>
+        <result property="lastModifiedBy"   column="last_modified_by"/>
+        <result property="deletedOn"        column="deleted_on"        javaType="java.time.LocalDateTime"/>
+        <result property="deletedBy"        column="deleted_by"/>
+        <result property="active"           column="active"/>
+        <result property="deleted"          column="deleted"/>
+        <result property="remark"           column="remark"/>
+        <result property="version"          column="version"/>
+        <result property="requestedByName"  column="requested_by_name"/>
+        <result property="requestedByEmail" column="requested_by_email"/>
+    </resultMap>
+
+    <sql id="selectColumns">
+        mr.id, mr.requested_by, mr.request_type, mr.status, mr.game, mr.category, mr.message,
+        mr."time" AS time, mr.urgent,
+        mr.created_on, mr.created_by, mr.last_modified_on, mr.last_modified_by,
+        mr.deleted_on, mr.deleted_by, mr.active, mr.deleted, mr.remark, mr.version,
+        u.name AS requested_by_name, u.email AS requested_by_email
+    </sql>
+
+    <sql id="filterWhere">
+        <where>
+            <if test="filter.id != null and filter.id != ''">
+                AND mr.id = #{filter.id}::uuid
+            </if>
+            <if test="filter.ids != null and !filter.ids.isEmpty()">
+                AND mr.id IN
+                <foreach item="id" collection="filter.ids" open="(" separator="," close=")">
+                    #{id}::uuid
+                </foreach>
+            </if>
+            <if test="filter.requestedBy != null and filter.requestedBy != ''">
+                AND mr.requested_by = #{filter.requestedBy}::uuid
+            </if>
+            <if test="filter.requestType != null and filter.requestType != ''">
+                AND UPPER(mr.request_type) = UPPER(#{filter.requestType})
+            </if>
+            <if test="filter.status != null and filter.status != ''">
+                AND UPPER(mr.status) = UPPER(#{filter.status})
+            </if>
+            <if test="filter.game != null and filter.game != ''">
+                AND LOWER(mr.game) LIKE LOWER(CONCAT('%', #{filter.game}, '%'))
+            </if>
+            <if test="filter.category != null and filter.category != ''">
+                AND LOWER(mr.category) LIKE LOWER(CONCAT('%', #{filter.category}, '%'))
+            </if>
+            <if test="filter.urgent != null">
+                AND mr.urgent = #{filter.urgent}
+            </if>
+            <if test="filter.timeFrom != null">
+                AND mr."time" &gt;= #{filter.timeFrom}
+            </if>
+            <if test="filter.timeTo != null">
+                AND mr."time" &lt;= #{filter.timeTo}
+            </if>
+            <if test="filter.active != null">
+                AND mr.active = #{filter.active}
+            </if>
+            <choose>
+                <when test="filter.delete != null and filter.delete">
+                    AND mr.deleted = true
+                </when>
+                <otherwise>
+                    AND mr.deleted = false
+                </otherwise>
+            </choose>
+        </where>
+    </sql>
+
+    <select id="findAll" resultMap="matchRequestResultMap">
+        SELECT <include refid="selectColumns"/>
+        FROM match_requests mr
+        LEFT JOIN users u ON u.id = mr.requested_by
+        <include refid="filterWhere"/>
+        ORDER BY mr.${filter.sortColumn} ${filter.sortDirection}
+        LIMIT #{filter.pageSize} OFFSET #{filter.offset}
+    </select>
+
+    <select id="findAllWithoutPagination" resultMap="matchRequestResultMap">
+        SELECT <include refid="selectColumns"/>
+        FROM match_requests mr
+        LEFT JOIN users u ON u.id = mr.requested_by
+        <include refid="filterWhere"/>
+        ORDER BY mr.${filter.sortColumn} ${filter.sortDirection}
+    </select>
+
+    <select id="countAll" resultType="int">
+        SELECT COUNT(mr.id)
+        FROM match_requests mr
+        <include refid="filterWhere"/>
+    </select>
+
+    <select id="findById" resultMap="matchRequestResultMap">
+        SELECT <include refid="selectColumns"/>
+        FROM match_requests mr
+        LEFT JOIN users u ON u.id = mr.requested_by
+        WHERE mr.id = #{id}::uuid
+    </select>
+
+    <insert id="insert">
+        INSERT INTO match_requests (
+            id, requested_by, request_type, status, game, category, message, "time", urgent,
+            created_on, created_by, last_modified_on, last_modified_by,
+            active, deleted, remark, version
+        ) VALUES (
+            #{id}::uuid, #{requestedBy}::uuid, #{requestType}, #{status}, #{game}, #{category}, #{message}, #{time}, #{urgent},
+            #{createdOn}, #{createdBy}, #{lastModifiedOn}, #{lastModifiedBy},
+            #{active}, #{deleted}, #{remark}, #{version}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE match_requests
+        <set>
+            <if test="requestType != null">request_type = #{requestType},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="game != null">game = #{game},</if>
+            <if test="category != null">category = #{category},</if>
+            <if test="message != null">message = #{message},</if>
+            <if test="time != null">"time" = #{time},</if>
+            urgent = #{urgent},
+            <if test="lastModifiedOn != null">last_modified_on = #{lastModifiedOn},</if>
+            <if test="lastModifiedBy != null">last_modified_by = #{lastModifiedBy},</if>
+            <if test="deletedOn != null">deleted_on = #{deletedOn},</if>
+            <if test="deletedBy != null">deleted_by = #{deletedBy},</if>
+            <if test="active != null">active = #{active},</if>
+            <if test="deleted != null">deleted = #{deleted},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="version != null">version = #{version},</if>
+        </set>
+        WHERE id = #{id}::uuid
+    </update>
+
+    <update id="delete">
+        UPDATE match_requests
+        SET deleted = true,
+            active = false,
+            deleted_on = #{deletedOn},
+            deleted_by = #{deletedBy}
+        WHERE id = #{id}::uuid
+    </update>
+
+</mapper>
