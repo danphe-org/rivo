@@ -67,7 +67,7 @@ Dependencies flow strictly from outer to inner layers in a unidirectional pipeli
      - Allowed dependencies: **`app/service/` and `app/common/`**.
      - **NEVER** depend directly on `app/repository/` or bypass the service layer to execute database queries.
      - Controllers must be **lean**: parse/validate inputs, delegate to service, and return `RestResponse.ok(result)`.
-     - **NO `summary` or `description` in route decorators**: Do NOT define `summary` or `description` attributes on controller route decorators (e.g. `@router.get`, `@router.post`) or parameters. They are unnecessary; API documentation is maintained in `FRONTEND_API.md`.
+     - **NO `summary` or `description` in route decorators**: Do NOT define `summary` or `description` attributes on controller route decorators (e.g. `@router.get`, `@router.post`) or parameters. They are unnecessary; API documentation is maintained in [`FRONTEND_CLIENT_API.md`](FRONTEND_CLIENT_API.md) and [`FRONTEND_SYSTEM_API.md`](FRONTEND_SYSTEM_API.md).
 
 ---
 
@@ -96,7 +96,7 @@ Step 5: Define API Routes (app/api/system/<feature>.py or app/api/client/<featur
 Step 6: Register Route in Central Router (app/api/router.py)
    │    └─ Mount under /api/system or /api/client
    ▼
-Step 7: Update FRONTEND_API.md (MANDATORY in the same commit/change)
+Step 7: Update FRONTEND_CLIENT_API.md / FRONTEND_SYSTEM_API.md (MANDATORY in the same commit/change)
    │    └─ Document paths, methods, permissions, schemas, sample JSON
    ▼
 Step 8: Ready for User Verification
@@ -184,7 +184,7 @@ All paginated endpoints must follow these conventions:
 ## 6. Mandatory Frontend API Documentation Rule
 
 > [!IMPORTANT]
-> Whenever any new CRUD endpoint, parameter, request field, response field, or authorization requirement is created, modified, or deleted, you **MUST immediately update [`FRONTEND_API.md`](FRONTEND_API.md)** in the same commit/changeset.
+> Whenever any new CRUD endpoint, parameter, request field, response field, or authorization requirement is created, modified, or deleted, you **MUST immediately update the respective documentation ([`FRONTEND_CLIENT_API.md`](FRONTEND_CLIENT_API.md) or [`FRONTEND_SYSTEM_API.md`](FRONTEND_SYSTEM_API.md))** in the same commit/changeset.
 
 The documentation must always include:
 - HTTP method and exact URL path.
@@ -198,7 +198,7 @@ The documentation must always include:
 
 Before concluding any backend coding task:
 1. **Never run tests**: The agent must **NEVER** run tests (`unittest`, `pytest`, etc.) automatically. All testing is managed and executed manually by the user.
-2. **Verify that [`FRONTEND_API.md`](FRONTEND_API.md) is updated** and accurately reflects all changes made.
+2. **Verify that [`FRONTEND_CLIENT_API.md`](FRONTEND_CLIENT_API.md) or [`FRONTEND_SYSTEM_API.md`](FRONTEND_SYSTEM_API.md) is updated** and accurately reflects all changes made.
 
 ---
 
