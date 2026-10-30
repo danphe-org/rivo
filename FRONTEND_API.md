@@ -122,7 +122,7 @@ Used exclusively by the back-office / admin portal on port 8021.
   }
   ```
 - **Cookies Set**:
-  - `access_token`: HttpOnly; Path=/; Max-Age=900 (15 min); SameSite=Lax
+  - `access_token`: HttpOnly; Path=/; Max-Age=86400 (24 hours); SameSite=Lax
   - `refresh_token`: HttpOnly; Path=/; Max-Age=604800 (7 days); SameSite=Lax
 - **Errors**:
   - `401 Unauthorized`: Invalid email or password (`{"code": "401", "message": "Invalid email or password"}`) or inactive account (`{"code": "401", "message": "User account is inactive"}`).
@@ -439,6 +439,155 @@ Used exclusively by the back-office / admin portal on port 8021.
       ]
     },
     "time": "2026-10-29T16:15:00.123456"
+  }
+  ```
+
+### 2.18 Create Master Data Item (`POST /api/system/master-data-items`)
+- **Authority / Permission**: Administrative / System User (🔒 **ROLE_RESTRICTED**: `SYSTEM_USER`, `ADMIN`, `STAFF`)
+- **Method**: `POST`
+- **Path**: `/api/system/master-data-items`
+- **Request Body (`MasterDataItemCreateDto`)**:
+  ```json
+  {
+    "master_data_id": "c1f7a61d-8692-426b-80a9-19601d3cb863",
+    "title": "PUBG Mobile",
+    "code": "PUBG",
+    "description": "Battle Royale game category item"
+  }
+  ```
+- **Fields & Validations (`MasterDataItemCreateDto`)**:
+  - `master_data_id`: string (UUID), **required**, `@NotBlank`
+  - `title`: string, **required**, `@NotBlank`, `@Size(max = 255)`
+  - `code`: string, optional, `@Size(max = 100)`
+  - `description`: string, optional
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": {
+      "id": "d2f8b72e-9703-537c-91ba-20712e4dc974",
+      "master_data_id": "c1f7a61d-8692-426b-80a9-19601d3cb863",
+      "title": "PUBG Mobile",
+      "code": "PUBG",
+      "description": "Battle Royale game category item",
+      "created_on": "2026-10-29T20:25:00",
+      "modified_on": "2026-10-29T20:25:00",
+      "created_by": "e8334460-aefb-4171-872f-5ea3b1187c32",
+      "modified_by": "e8334460-aefb-4171-872f-5ea3b1187c32",
+      "active": true,
+      "deleted": false
+    },
+    "time": "2026-10-29T20:25:00.123456"
+  }
+  ```
+
+### 2.19 Get Master Data Item by ID (`GET /api/system/master-data-items/{id}`)
+- **Authority / Permission**: Administrative / System User (🔒 **ROLE_RESTRICTED**: `SYSTEM_USER`, `ADMIN`, `STAFF`)
+- **Method**: `GET`
+- **Path**: `/api/system/master-data-items/{id}`
+- **Response**: `200 OK` (`MasterDataItemResponseDto`)
+
+### 2.20 Get Master Data Items by Parent Master Data ID (`GET /api/system/master-data-items/master-data/{masterDataId}`)
+- **Authority / Permission**: Administrative / System User (🔒 **ROLE_RESTRICTED**: `SYSTEM_USER`, `ADMIN`, `STAFF`)
+- **Method**: `GET`
+- **Path**: `/api/system/master-data-items/master-data/{masterDataId}`
+- **Response**: `200 OK` (`List<MasterDataItemResponseDto>`)
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": [
+      {
+        "id": "d2f8b72e-9703-537c-91ba-20712e4dc974",
+        "master_data_id": "c1f7a61d-8692-426b-80a9-19601d3cb863",
+        "title": "PUBG Mobile",
+        "code": "PUBG",
+        "description": "Battle Royale game category item",
+        "created_on": "2026-10-29T20:25:00",
+        "modified_on": "2026-10-29T20:25:00",
+        "created_by": "e8334460-aefb-4171-872f-5ea3b1187c32",
+        "modified_by": "e8334460-aefb-4171-872f-5ea3b1187c32",
+        "active": true,
+        "deleted": false
+      }
+    ],
+    "time": "2026-10-29T20:25:00.123456"
+  }
+  ```
+
+### 2.21 Update Master Data Item (`PUT /api/system/master-data-items/{id}`)
+- **Authority / Permission**: Administrative / System User (🔒 **ROLE_RESTRICTED**: `SYSTEM_USER`, `ADMIN`, `STAFF`)
+- **Method**: `PUT`
+- **Path**: `/api/system/master-data-items/{id}`
+- **Request Body (`MasterDataItemUpdateDto`)**:
+  ```json
+  {
+    "master_data_id": "c1f7a61d-8692-426b-80a9-19601d3cb863",
+    "title": "eFootball 2026",
+    "code": "EFOOTBALL",
+    "description": "Updated sports simulation game"
+  }
+  ```
+- **Response**: `200 OK` (`MasterDataItemResponseDto`)
+
+### 2.22 Delete Master Data Item (`DELETE /api/system/master-data-items/{id}`)
+- **Authority / Permission**: Administrative / System User (🔒 **ROLE_RESTRICTED**: `SYSTEM_USER`, `ADMIN`, `STAFF`)
+- **Method**: `DELETE`
+- **Path**: `/api/system/master-data-items/{id}`
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": null,
+    "time": "2026-10-29T20:25:00.123456"
+  }
+  ```
+
+### 2.23 Search Master Data Items (`POST /api/system/master-data-items/search`)
+- **Authority / Permission**: Administrative / System User (🔒 **ROLE_RESTRICTED**: `SYSTEM_USER`, `ADMIN`, `STAFF`)
+- **Method**: `POST`
+- **Path**: `/api/system/master-data-items/search`
+- **Request Body (`MasterDataItemFilter`)**:
+  ```json
+  {
+    "pageNumber": 1,
+    "pageSize": 10,
+    "masterDataId": "c1f7a61d-8692-426b-80a9-19601d3cb863",
+    "title": "PUBG",
+    "code": "PUBG",
+    "sortField": "created_on",
+    "sortOrder": "DESC",
+    "active": true
+  }
+  ```
+- **Response**: `200 OK` (`Page<MasterDataItemResponseDto>`)
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": {
+      "totalRecords": 1,
+      "limit": 10,
+      "currentPage": 1,
+      "data": [
+        {
+          "id": "d2f8b72e-9703-537c-91ba-20712e4dc974",
+          "master_data_id": "c1f7a61d-8692-426b-80a9-19601d3cb863",
+          "title": "PUBG Mobile",
+          "code": "PUBG",
+          "description": "Battle Royale game category item",
+          "created_on": "2026-10-29T20:25:00",
+          "modified_on": "2026-10-29T20:25:00",
+          "created_by": "e8334460-aefb-4171-872f-5ea3b1187c32",
+          "modified_by": "e8334460-aefb-4171-872f-5ea3b1187c32",
+          "active": true,
+          "deleted": false
+        }
+      ]
+    },
+    "time": "2026-10-29T20:25:00.123456"
   }
   ```
 

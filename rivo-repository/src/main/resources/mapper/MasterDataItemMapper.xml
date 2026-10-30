@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.danphe.rivo.repository.internal.masterdataitem.MasterDataItemMapper">
+
+    <resultMap id="masterDataItemResultMap"
+               type="com.danphe.rivo.repository.internal.masterdataitem.MasterDataItemEntity">
+        <id     property="id"               column="id"/>
+        <result property="masterDataId"     column="master_data_id"/>
+        <result property="title"            column="title"/>
+        <result property="code"             column="code"/>
+        <result property="description"      column="description"/>
+        <result property="createdOn"        column="created_on"        javaType="java.time.LocalDateTime"/>
+        <result property="createdBy"        column="created_by"/>
+        <result property="lastModifiedOn"   column="last_modified_on"  javaType="java.time.LocalDateTime"/>
+        <result property="lastModifiedBy"   column="last_modified_by"/>
+        <result property="deletedOn"        column="deleted_on"        javaType="java.time.LocalDateTime"/>
+        <result property="deletedBy"        column="deleted_by"/>
+        <result property="active"           column="active"/>
+        <result property="deleted"          column="deleted"/>
+        <result property="remark"           column="remark"/>
+        <result property="version"          column="version"/>
+    </resultMap>
+
+    <sql id="selectColumns">
+        id, master_data_id, title, code, description,
+        created_on, created_by, last_modified_on, last_modified_by,
+        deleted_on, deleted_by, active, deleted, remark, version
+    </sql>
+
+    <sql id="filterWhere">
+        <where>
+            <if test="filter.id != null and filter.id != ''">
+                AND id = #{filter.id}::uuid
+            </if>
+            <if test="filter.ids != null and !filter.ids.isEmpty()">
+                AND id IN
+                <foreach item="id" collection="filter.ids" open="(" separator="," close=")">
+                    #{id}::uuid
+                </foreach>
+            </if>
+            <if test="filter.masterDataId != null and filter.masterDataId != ''">
+                AND master_data_id = #{filter.masterDataId}::uuid
+            </if>
+            <if test="filter.title != null and filter.title != ''">
+                AND LOWER(title) LIKE LOWER(CONCAT('%', #{filter.title}, '%'))
+            </if>
+            <if test="filter.code != null and filter.code != ''">
+                AND UPPER(code) = UPPER(#{filter.code})
+            </if>
+            <if test="filter.active != null">
+                AND active = #{filter.active}
+            </if>
+            <choose>
+                <when test="filter.delete != null and filter.delete">
+                    AND deleted = true
+                </when>
+                <otherwise>
+                    AND deleted = false
+                </otherwise>
+            </choose>
+        </where>
+    </sql>
+
+    <select id="findAll" resultMap="masterDataItemResultMap">
+        SELECT <include refid="selectColumns"/>
+        FROM master_data_items
+        <include refid="filterWhere"/>
+        ORDER BY ${filter.sortColumn} ${filter.sortDirection}
+        LIMIT #{filter.pageSize} OFFSET #{filter.offset}
+    </select>
+
+    <select id="findAllWithoutPagination" resultMap="masterDataItemResultMap">
+        SELECT <include refid="selectColumns"/>
+        FROM master_data_items
+        <include refid="filterWhere"/>
+        ORDER BY ${filter.sortColumn} ${filter.sortDirection}
+    </select>
+
+    <select id="countAll" resultType="int">
+        SELECT COUNT(id)
+        FROM master_data_items
+        <include refid="filterWhere"/>
+    </select>
+
+    <select id="findById" resultMap="masterDataItemResultMap">
+        SELECT <include refid="selectColumns"/>
+        FROM master_data_items
+        WHERE id = #{id}::uuid
+    </select>
+
+    <select id="findByMasterDataId" resultMap="masterDataItemResultMap">
+        SELECT <include refid="selectColumns"/>
+        FROM master_data_items
+        WHERE master_data_id = #{masterDataId}::uuid
+          AND deleted = false
+        ORDER BY title ASC
+    </select>
+
+    <select id="findByMasterDataIdAndTitle" resultMap="masterDataItemResultMap">
+        SELECT <include refid="selectColumns"/>
+        FROM master_data_items
+        WHERE master_data_id = #{masterDataId}::uuid
+          AND LOWER(title) = LOWER(#{title})
+          AND deleted = false
+        LIMIT 1
+    </select>
+
+    <insert id="insert">
+        INSERT INTO master_data_items (
+            id, master_data_id, title, code, description,
+            created_on, created_by, last_modified_on, last_modified_by,
+            active, deleted, remark, version
+        ) VALUES (
+            #{id}::uuid, #{masterDataId}::uuid, #{title}, #{code}, #{description},
+            #{createdOn}, #{createdBy}, #{lastModifiedOn}, #{lastModifiedBy},
+            #{active}, #{deleted}, #{remark}, #{version}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE master_data_items
+        <set>
+            <if test="masterDataId != null">master_data_id = #{masterDataId}::uuid,</if>
+            <if test="title != null">title = #{title},</if>
+            <if test="code != null">code = #{code},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="lastModifiedOn != null">last_modified_on = #{lastModifiedOn},</if>
+            <if test="lastModifiedBy != null">last_modified_by = #{lastModifiedBy},</if>
+            <if test="deletedOn != null">deleted_on = #{deletedOn},</if>
+            <if test="deletedBy != null">deleted_by = #{deletedBy},</if>
+            <if test="active != null">active = #{active},</if>
+            <if test="deleted != null">deleted = #{deleted},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="version != null">version = #{version},</if>
+        </set>
+        WHERE id = #{id}::uuid
+    </update>
+
+    <update id="delete">
+        UPDATE master_data_items
+        SET deleted = true,
+            active = false,
+            deleted_on = #{deletedOn},
+            deleted_by = #{deletedBy}
+        WHERE id = #{id}::uuid
+    </update>
+
+</mapper>

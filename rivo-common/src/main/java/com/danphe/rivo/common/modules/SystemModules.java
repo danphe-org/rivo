@@ -7,7 +7,8 @@ public enum SystemModules {
   USER("users"),
   USER_ROLE("user_roles"),
   MATCH_REQUEST("match_requests"),
-  MASTER_DATA("master_data");
+  MASTER_DATA("master_data"),
+  MASTER_DATA_ITEM("master_data_items");
 
   private final String entity;
 
