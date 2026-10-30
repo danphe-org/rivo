@@ -65,7 +65,7 @@
 
     <select id="findAll" resultMap="masterDataItemResultMap">
         SELECT <include refid="selectColumns"/>
-        FROM master_data_items
+        FROM system.master_data_items
         <include refid="filterWhere"/>
         ORDER BY ${filter.sortColumn} ${filter.sortDirection}
         LIMIT #{filter.pageSize} OFFSET #{filter.offset}
@@ -73,26 +73,26 @@
 
     <select id="findAllWithoutPagination" resultMap="masterDataItemResultMap">
         SELECT <include refid="selectColumns"/>
-        FROM master_data_items
+        FROM system.master_data_items
         <include refid="filterWhere"/>
         ORDER BY ${filter.sortColumn} ${filter.sortDirection}
     </select>
 
     <select id="countAll" resultType="int">
         SELECT COUNT(id)
-        FROM master_data_items
+        FROM system.master_data_items
         <include refid="filterWhere"/>
     </select>
 
     <select id="findById" resultMap="masterDataItemResultMap">
         SELECT <include refid="selectColumns"/>
-        FROM master_data_items
+        FROM system.master_data_items
         WHERE id = #{id}::uuid
     </select>
 
     <select id="findByMasterDataId" resultMap="masterDataItemResultMap">
         SELECT <include refid="selectColumns"/>
-        FROM master_data_items
+        FROM system.master_data_items
         WHERE master_data_id = #{masterDataId}::uuid
           AND deleted = false
         ORDER BY title ASC
@@ -100,7 +100,7 @@
 
     <select id="findByMasterDataIdAndTitle" resultMap="masterDataItemResultMap">
         SELECT <include refid="selectColumns"/>
-        FROM master_data_items
+        FROM system.master_data_items
         WHERE master_data_id = #{masterDataId}::uuid
           AND LOWER(title) = LOWER(#{title})
           AND deleted = false
@@ -108,7 +108,7 @@
     </select>
 
     <insert id="insert">
-        INSERT INTO master_data_items (
+        INSERT INTO system.master_data_items (
             id, master_data_id, title, code, description,
             created_on, created_by, last_modified_on, last_modified_by,
             active, deleted, remark, version
@@ -120,7 +120,7 @@
     </insert>
 
     <update id="update">
-        UPDATE master_data_items
+        UPDATE system.master_data_items
         <set>
             <if test="masterDataId != null">master_data_id = #{masterDataId}::uuid,</if>
             <if test="title != null">title = #{title},</if>
@@ -139,7 +139,7 @@
     </update>
 
     <update id="delete">
-        UPDATE master_data_items
+        UPDATE system.master_data_items
         SET deleted = true,
             active = false,
             deleted_on = #{deletedOn},

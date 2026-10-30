@@ -109,11 +109,11 @@ public class AppConfig {
   }
 
   public String[] getFlywaySchemas() {
-    return env.get("FLYWAY_SCHEMAS", "public").split(",");
+    return env.get("FLYWAY_SCHEMAS", "client,system,public").split(",");
   }
 
   public String getFlywayDefaultSchema() {
-    return env.get("FLYWAY_DEFAULT_SCHEMA", "public");
+    return env.get("FLYWAY_DEFAULT_SCHEMA", "system");
   }
 
   public String[] getFlywayLocations() {

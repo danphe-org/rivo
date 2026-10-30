@@ -11,7 +11,7 @@ public class ClientUserDetailsService implements UserDetailsService {
 
   private final UserService userService;
 
-  public ClientUserDetailsService(UserService userService) {
+  public ClientUserDetailsService(@org.springframework.beans.factory.annotation.Qualifier("clientUserService") UserService userService) {
     this.userService = userService;
   }
 

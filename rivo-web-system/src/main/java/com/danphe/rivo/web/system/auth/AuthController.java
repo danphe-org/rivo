@@ -37,7 +37,7 @@ public class AuthController {
   private final MdcSetupFilter mdcSetupFilter;
 
   public AuthController(
-      UserService userService,
+      @org.springframework.beans.factory.annotation.Qualifier("systemUserService") UserService userService,
       JwtTokenProvider jwtProvider,
       PasswordEncoder passwordEncoder,
       MdcSetupFilter mdcSetupFilter) {

@@ -16,10 +16,13 @@ import com.danphe.rivo.service.internal.user.usecase.UserSearchUseCase;
 import com.danphe.rivo.service.internal.user.usecase.UserUpdateUseCase;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-@Service
+@Primary
+@Service("userService")
 public class UserServiceImpl implements UserService {
 
   private final UserRepository repository;
@@ -29,7 +32,7 @@ public class UserServiceImpl implements UserService {
   private final PasswordEncoder passwordEncoder;
 
   public UserServiceImpl(
-      UserRepository repository,
+      @Qualifier("systemUserRepository") UserRepository repository,
       UserRoleRepository userRoleRepository,
       UserEntityConverter converter,
       AuditDao auditDao,

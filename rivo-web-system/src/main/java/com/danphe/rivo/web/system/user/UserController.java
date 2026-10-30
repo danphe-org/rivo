@@ -25,7 +25,7 @@ public class UserController {
 
   private final UserService userService;
 
-  public UserController(UserService userService) {
+  public UserController(@org.springframework.beans.factory.annotation.Qualifier("systemUserService") UserService userService) {
     this.userService = userService;
   }
 

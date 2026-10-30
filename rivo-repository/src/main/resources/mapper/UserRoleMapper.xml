@@ -29,13 +29,13 @@
 
     <select id="findById" resultMap="userRoleResultMap">
         SELECT <include refid="baseColumns"/>
-        FROM user_roles
+        FROM system.user_roles
         WHERE id = #{id}::uuid
     </select>
 
     <select id="findByUserId" resultMap="userRoleResultMap">
         SELECT <include refid="baseColumns"/>
-        FROM user_roles
+        FROM system.user_roles
         WHERE user_id = #{userId}::uuid
           AND deleted = false
         ORDER BY created_on ASC
@@ -43,7 +43,7 @@
 
     <select id="findAllByUserIdIn" resultMap="userRoleResultMap">
         SELECT <include refid="baseColumns"/>
-        FROM user_roles
+        FROM system.user_roles
         WHERE user_id IN
         <foreach item="uid" collection="userIds" open="(" separator="," close=")">
             #{uid}::uuid
@@ -53,7 +53,7 @@
     </select>
 
     <insert id="insert">
-        INSERT INTO user_roles (
+        INSERT INTO system.user_roles (
             id, user_id, role,
             created_on, created_by, last_modified_on, last_modified_by,
             active, deleted, remark, version
@@ -65,7 +65,7 @@
     </insert>
 
     <update id="update">
-        UPDATE user_roles
+        UPDATE system.user_roles
         <set>
             <if test="role != null">role = #{role},</if>
             <if test="lastModifiedOn != null">last_modified_on = #{lastModifiedOn},</if>
@@ -81,7 +81,7 @@
     </update>
 
     <update id="delete">
-        UPDATE user_roles
+        UPDATE system.user_roles
         SET deleted = true,
             active = false,
             deleted_on = #{deletedOn},
@@ -90,7 +90,7 @@
     </update>
 
     <update id="deleteByUserId">
-        UPDATE user_roles
+        UPDATE system.user_roles
         SET deleted = true,
             active = false,
             deleted_on = NOW()

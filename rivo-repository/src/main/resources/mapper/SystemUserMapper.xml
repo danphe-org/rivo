@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.danphe.rivo.repository.internal.systemuser.SystemUserMapper">
+
+    <resultMap id="systemUserResultMap"
+               type="com.danphe.rivo.repository.internal.systemuser.SystemUserEntity">
+        <id     property="id"             column="id"/>
+        <result property="name"           column="name"/>
+        <result property="email"          column="email"/>
+        <result property="password"       column="password"/>
+        <result property="phone"          column="phone"/>
+        <result property="createdOn"      column="created_on"        javaType="java.time.LocalDateTime"/>
+        <result property="createdBy"      column="created_by"/>
+        <result property="lastModifiedOn" column="last_modified_on"  javaType="java.time.LocalDateTime"/>
+        <result property="lastModifiedBy" column="last_modified_by"/>
+        <result property="deletedOn"      column="deleted_on"        javaType="java.time.LocalDateTime"/>
+        <result property="deletedBy"      column="deleted_by"/>
+        <result property="active"         column="active"/>
+        <result property="deleted"        column="deleted"/>
+        <result property="remark"         column="remark"/>
+        <result property="version"        column="version"/>
+    </resultMap>
+
+    <resultMap id="userRoleResultMap"
+               type="com.danphe.rivo.repository.internal.userrole.UserRoleEntity">
+        <id     property="id"             column="id"/>
+        <result property="userId"         column="user_id"/>
+        <result property="role"           column="role"/>
+        <result property="createdOn"      column="created_on"        javaType="java.time.LocalDateTime"/>
+        <result property="createdBy"      column="created_by"/>
+        <result property="lastModifiedOn" column="last_modified_on"  javaType="java.time.LocalDateTime"/>
+        <result property="lastModifiedBy" column="last_modified_by"/>
+        <result property="deletedOn"      column="deleted_on"        javaType="java.time.LocalDateTime"/>
+        <result property="deletedBy"      column="deleted_by"/>
+        <result property="active"         column="active"/>
+        <result property="deleted"        column="deleted"/>
+        <result property="remark"         column="remark"/>
+        <result property="version"        column="version"/>
+    </resultMap>
+
+    <sql id="baseColumns">
+        id, name, email, password, phone,
+        created_on, created_by, last_modified_on, last_modified_by,
+        deleted_on, deleted_by, active, deleted, remark, version
+    </sql>
+
+    <sql id="roleBaseColumns">
+        id, user_id, role,
+        created_on, created_by, last_modified_on, last_modified_by,
+        deleted_on, deleted_by, active, deleted, remark, version
+    </sql>
+
+    <sql id="filterWhere">
+        <where>
+            <if test="filter.id != null and filter.id != ''">
+                AND id = #{filter.id}::uuid
+            </if>
+            <if test="filter.ids != null and !filter.ids.isEmpty()">
+                AND id IN
+                <foreach item="id" collection="filter.ids" open="(" separator="," close=")">
+                    #{id}::uuid
+                </foreach>
+            </if>
+            <if test="filter.email != null and filter.email != ''">
+                AND LOWER(email) = LOWER(#{filter.email})
+            </if>
+            <if test="filter.phone != null and filter.phone != ''">
+                AND phone = #{filter.phone}
+            </if>
+            <if test="filter.role != null and filter.role != ''">
+                AND EXISTS (
+                    SELECT 1 FROM system.user_roles ur
+                    WHERE ur.user_id = system.system_users.id
+                      AND UPPER(ur.role) = UPPER(#{filter.role})
+                      AND ur.deleted = false
+                )
+            </if>
+            <if test="filter.name != null and filter.name != ''">
+                AND LOWER(name) LIKE LOWER(CONCAT('%', #{filter.name}, '%'))
+            </if>
+            <if test="filter.searchParameter != null and filter.searchParameter != ''">
+                AND (
+                    LOWER(name) LIKE LOWER(CONCAT('%', #{filter.searchParameter}, '%'))
+                    OR LOWER(email) LIKE LOWER(CONCAT('%', #{filter.searchParameter}, '%'))
+                    OR phone LIKE CONCAT('%', #{filter.searchParameter}, '%')
+                )
+            </if>
+            <if test="filter.active != null">
+                AND active = #{filter.active}
+            </if>
+            <choose>
+                <when test="filter.delete != null and filter.delete">
+                    AND deleted = true
+                </when>
+                <otherwise>
+                    AND deleted = false
+                </otherwise>
+            </choose>
+        </where>
+    </sql>
+
+    <select id="findAll" resultMap="systemUserResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM system.system_users
+        <include refid="filterWhere"/>
+        ORDER BY ${filter.sortColumn} ${filter.sortDirection}
+        LIMIT #{filter.pageSize} OFFSET #{filter.offset}
+    </select>
+
+    <select id="findAllWithoutPagination" resultMap="systemUserResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM system.system_users
+        <include refid="filterWhere"/>
+        ORDER BY ${filter.sortColumn} ${filter.sortDirection}
+    </select>
+
+    <select id="countAll" resultType="int">
+        SELECT COUNT(*)
+        FROM system.system_users
+        <include refid="filterWhere"/>
+    </select>
+
+    <select id="findById" resultMap="systemUserResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM system.system_users
+        WHERE id = #{id}::uuid
+    </select>
+
+    <select id="findByEmail" resultMap="systemUserResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM system.system_users
+        WHERE LOWER(email) = LOWER(#{email})
+    </select>
+
+    <select id="findByPhone" resultMap="systemUserResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM system.system_users
+        WHERE phone = #{phone}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO system.system_users (
+            id, name, email, password, phone,
+            created_on, created_by, last_modified_on, last_modified_by,
+            active, deleted, remark, version
+        ) VALUES (
+            #{id}::uuid, #{name}, #{email}, #{password}, #{phone},
+            #{createdOn}, #{createdBy}, #{lastModifiedOn}, #{lastModifiedBy},
+            #{active}, #{deleted}, #{remark}, #{version}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE system.system_users
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="email != null">email = #{email},</if>
+            <if test="password != null">password = #{password},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="lastModifiedOn != null">last_modified_on = #{lastModifiedOn},</if>
+            <if test="lastModifiedBy != null">last_modified_by = #{lastModifiedBy},</if>
+            <if test="deletedOn != null">deleted_on = #{deletedOn},</if>
+            <if test="deletedBy != null">deleted_by = #{deletedBy},</if>
+            <if test="active != null">active = #{active},</if>
+            <if test="deleted != null">deleted = #{deleted},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="version != null">version = #{version},</if>
+        </set>
+        WHERE id = #{id}::uuid
+    </update>
+
+    <update id="delete">
+        UPDATE system.system_users
+        SET deleted = true,
+            active = false,
+            deleted_on = #{deletedOn},
+            deleted_by = #{deletedBy}
+        WHERE id = #{id}::uuid
+    </update>
+
+    <select id="findRolesByUserId" resultMap="userRoleResultMap">
+        SELECT <include refid="roleBaseColumns"/>
+        FROM system.user_roles
+        WHERE user_id = #{userId}::uuid
+          AND deleted = false
+        ORDER BY created_on ASC
+    </select>
+
+    <select id="findAllRolesByUserIds" resultMap="userRoleResultMap">
+        SELECT <include refid="roleBaseColumns"/>
+        FROM system.user_roles
+        WHERE user_id IN
+        <foreach item="uid" collection="userIds" open="(" separator="," close=")">
+            #{uid}::uuid
+        </foreach>
+          AND deleted = false
+        ORDER BY created_on ASC
+    </select>
+
+    <insert id="insertRole">
+        INSERT INTO system.user_roles (
+            id, user_id, role,
+            created_on, created_by, last_modified_on, last_modified_by,
+            active, deleted, remark, version
+        ) VALUES (
+            #{id}::uuid, #{userId}::uuid, #{role},
+            #{createdOn}, #{createdBy}, #{lastModifiedOn}, #{lastModifiedBy},
+            #{active}, #{deleted}, #{remark}, #{version}
+        )
+    </insert>
+
+    <update id="deleteRolesByUserId">
+        UPDATE system.user_roles
+        SET deleted = true,
+            active = false
+        WHERE user_id = #{userId}::uuid
+    </update>
+
+</mapper>

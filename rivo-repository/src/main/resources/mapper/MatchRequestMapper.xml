@@ -88,8 +88,8 @@
 
     <select id="findAll" resultMap="matchRequestResultMap">
         SELECT <include refid="selectColumns"/>
-        FROM match_requests mr
-        LEFT JOIN users u ON u.id = mr.requested_by
+        FROM client.match_requests mr
+        LEFT JOIN client.client_users u ON u.id = mr.requested_by
         <include refid="filterWhere"/>
         ORDER BY mr.${filter.sortColumn} ${filter.sortDirection}
         LIMIT #{filter.pageSize} OFFSET #{filter.offset}
@@ -97,27 +97,27 @@
 
     <select id="findAllWithoutPagination" resultMap="matchRequestResultMap">
         SELECT <include refid="selectColumns"/>
-        FROM match_requests mr
-        LEFT JOIN users u ON u.id = mr.requested_by
+        FROM client.match_requests mr
+        LEFT JOIN client.client_users u ON u.id = mr.requested_by
         <include refid="filterWhere"/>
         ORDER BY mr.${filter.sortColumn} ${filter.sortDirection}
     </select>
 
     <select id="countAll" resultType="int">
         SELECT COUNT(mr.id)
-        FROM match_requests mr
+        FROM client.match_requests mr
         <include refid="filterWhere"/>
     </select>
 
     <select id="findById" resultMap="matchRequestResultMap">
         SELECT <include refid="selectColumns"/>
-        FROM match_requests mr
-        LEFT JOIN users u ON u.id = mr.requested_by
+        FROM client.match_requests mr
+        LEFT JOIN client.client_users u ON u.id = mr.requested_by
         WHERE mr.id = #{id}::uuid
     </select>
 
     <insert id="insert">
-        INSERT INTO match_requests (
+        INSERT INTO client.match_requests (
             id, requested_by, request_type, status, game, category, message, "time", urgent,
             created_on, created_by, last_modified_on, last_modified_by,
             active, deleted, remark, version
@@ -129,7 +129,7 @@
     </insert>
 
     <update id="update">
-        UPDATE match_requests
+        UPDATE client.match_requests
         <set>
             <if test="requestType != null">request_type = #{requestType},</if>
             <if test="status != null">status = #{status},</if>
@@ -151,7 +151,7 @@
     </update>
 
     <update id="delete">
-        UPDATE match_requests
+        UPDATE client.match_requests
         SET deleted = true,
             active = false,
             deleted_on = #{deletedOn},

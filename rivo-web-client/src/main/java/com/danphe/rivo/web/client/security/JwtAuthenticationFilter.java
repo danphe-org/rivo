@@ -25,7 +25,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   private final JwtTokenProvider jwtProvider;
   private final UserService userService;
 
-  public JwtAuthenticationFilter(JwtTokenProvider jwtProvider, UserService userService) {
+  public JwtAuthenticationFilter(
+      JwtTokenProvider jwtProvider,
+      @org.springframework.beans.factory.annotation.Qualifier("clientUserService") UserService userService) {
     this.jwtProvider = jwtProvider;
     this.userService = userService;
   }

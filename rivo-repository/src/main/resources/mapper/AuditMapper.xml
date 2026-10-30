@@ -21,7 +21,7 @@
     </resultMap>
 
     <insert id="insert">
-        INSERT INTO audit_logs(id, entity_key, request_type,
+        INSERT INTO system.audit_logs(id, entity_key, request_type,
                               new_data, old_data, requested_by,
                               requested_on, responded_by, responded_on, remarks, entity, resource)
         VALUES (#{id}, #{entityKey}, #{requestType}, #{newEntity}::JSONB,
@@ -30,7 +30,7 @@
     </insert>
 
     <insert id="insertBulk">
-        INSERT INTO audit_logs(id, entity_key, request_type,
+        INSERT INTO system.audit_logs(id, entity_key, request_type,
         new_data, old_data, requested_by,
         requested_on, responded_by, responded_on, remarks, entity, resource)
         VALUES

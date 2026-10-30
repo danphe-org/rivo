@@ -133,11 +133,14 @@ All search and filter endpoints accept a JSON filter body extending `AbstractFil
 - **Method**: `POST`
 - **Path**: `/api/system/auth/login`
 - **Access Rule**: Requires administrative role (`SYSTEM_USER`, `ADMIN`, or `STAFF`). Non-system users are rejected with HTTP 403.
+- **Default Seeded Credentials (matching Bazar)**:
+  - `email`: `superadmin@bazar.com` (or `superadmin@rivo.com`)
+  - `password`: `Admin@1234`
 - **Request Body (`LoginRequest`)**:
   ```json
   {
-    "email": "admin@example.com",
-    "password": "AdminPassword123!"
+    "email": "superadmin@bazar.com",
+    "password": "Admin@1234"
   }
   ```
 - **Cookies Set**:

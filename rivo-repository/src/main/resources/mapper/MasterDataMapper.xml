@@ -60,7 +60,7 @@
 
     <select id="findAll" resultMap="masterDataResultMap">
         SELECT <include refid="selectColumns"/>
-        FROM master_data
+        FROM system.master_data
         <include refid="filterWhere"/>
         ORDER BY ${filter.sortColumn} ${filter.sortDirection}
         LIMIT #{filter.pageSize} OFFSET #{filter.offset}
@@ -68,26 +68,26 @@
 
     <select id="findAllWithoutPagination" resultMap="masterDataResultMap">
         SELECT <include refid="selectColumns"/>
-        FROM master_data
+        FROM system.master_data
         <include refid="filterWhere"/>
         ORDER BY ${filter.sortColumn} ${filter.sortDirection}
     </select>
 
     <select id="countAll" resultType="int">
         SELECT COUNT(id)
-        FROM master_data
+        FROM system.master_data
         <include refid="filterWhere"/>
     </select>
 
     <select id="findById" resultMap="masterDataResultMap">
         SELECT <include refid="selectColumns"/>
-        FROM master_data
+        FROM system.master_data
         WHERE id = #{id}::uuid
     </select>
 
     <select id="findByCode" resultMap="masterDataResultMap">
         SELECT <include refid="selectColumns"/>
-        FROM master_data
+        FROM system.master_data
         WHERE UPPER(code) = UPPER(#{code})
           AND deleted = false
         ORDER BY title ASC
@@ -95,7 +95,7 @@
 
     <select id="findByCodeAndTitle" resultMap="masterDataResultMap">
         SELECT <include refid="selectColumns"/>
-        FROM master_data
+        FROM system.master_data
         WHERE UPPER(code) = UPPER(#{code})
           AND LOWER(title) = LOWER(#{title})
           AND deleted = false
@@ -103,7 +103,7 @@
     </select>
 
     <insert id="insert">
-        INSERT INTO master_data (
+        INSERT INTO system.master_data (
             id, title, code,
             created_on, created_by, last_modified_on, last_modified_by,
             active, deleted, remark, version
@@ -115,7 +115,7 @@
     </insert>
 
     <update id="update">
-        UPDATE master_data
+        UPDATE system.master_data
         <set>
             <if test="title != null">title = #{title},</if>
             <if test="code != null">code = #{code},</if>
@@ -132,7 +132,7 @@
     </update>
 
     <update id="delete">
-        UPDATE master_data
+        UPDATE system.master_data
         SET deleted = true,
             active = false,
             deleted_on = #{deletedOn},
