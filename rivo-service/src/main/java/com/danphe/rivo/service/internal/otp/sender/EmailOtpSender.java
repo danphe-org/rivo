@@ -34,6 +34,7 @@ public class EmailOtpSender implements OtpSender {
   @Override
   public void sendOtp(String identifier, String plainOtp, OtpPurpose purpose) {
     if (!appConfig.isEmailConfigured()) {
+      log.warn("Email host is not configured (host='{}'), falling back to logging sender", appConfig.getEmailHost());
       loggingOtpSender.sendOtp(identifier, plainOtp, purpose);
       return;
     }
@@ -41,7 +42,7 @@ public class EmailOtpSender implements OtpSender {
     try {
       MimeMessage message = mailSender.createMimeMessage();
       MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-      helper.setFrom(appConfig.getEmailFrom());
+      helper.setFrom(appConfig.getEmailFrom(), "Rivo");
       helper.setTo(identifier);
       helper.setSubject("Rivo - Verification Code");
       helper.setText(buildHtmlEmail(plainOtp), true);

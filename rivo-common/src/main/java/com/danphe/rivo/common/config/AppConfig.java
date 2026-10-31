@@ -149,7 +149,10 @@ public class AppConfig {
   }
 
   public String getEmailHost() {
-    String host = env.get("EMAIL_HOST");
+    String host = env.get("SPRING_MAIL_HOST");
+    if (host == null || host.isBlank()) {
+      host = env.get("EMAIL_HOST");
+    }
     if (host == null || host.isBlank()) {
       host = env.get("SMTP_HOST", "");
     }
@@ -157,9 +160,15 @@ public class AppConfig {
   }
 
   public int getEmailPort() {
-    String port = env.get("EMAIL_PORT");
+    String port = env.get("SPRING_MAIL_PORT");
     if (port == null || port.isBlank()) {
-      return env.getInt("SMTP_PORT", 587);
+      port = env.get("EMAIL_PORT");
+    }
+    if (port == null || port.isBlank()) {
+      port = env.get("SMTP_PORT");
+    }
+    if (port == null || port.isBlank()) {
+      return 587;
     }
     try {
       return Integer.parseInt(port.trim());
@@ -169,7 +178,10 @@ public class AppConfig {
   }
 
   public String getEmailUsername() {
-    String user = env.get("EMAIL_HOST_USER");
+    String user = env.get("SPRING_MAIL_USERNAME");
+    if (user == null || user.isBlank()) {
+      user = env.get("EMAIL_HOST_USER");
+    }
     if (user == null || user.isBlank()) {
       user = env.get("SMTP_USERNAME", "");
     }
@@ -177,7 +189,10 @@ public class AppConfig {
   }
 
   public String getEmailPassword() {
-    String pass = env.get("EMAIL_HOST_PASSWORD");
+    String pass = env.get("SPRING_MAIL_PASSWORD");
+    if (pass == null || pass.isBlank()) {
+      pass = env.get("EMAIL_HOST_PASSWORD");
+    }
     if (pass == null || pass.isBlank()) {
       pass = env.get("SMTP_PASSWORD", "");
     }
@@ -185,7 +200,10 @@ public class AppConfig {
   }
 
   public String getEmailFrom() {
-    String from = env.get("DEFAULT_FROM_EMAIL");
+    String from = env.get("SPRING_MAIL_FROM");
+    if (from == null || from.isBlank()) {
+      from = env.get("DEFAULT_FROM_EMAIL");
+    }
     if (from == null || from.isBlank()) {
       from = env.get("SMTP_FROM_EMAIL");
     }
@@ -195,12 +213,30 @@ public class AppConfig {
     return from != null && !from.isBlank() ? from : "noreply@rivo.com";
   }
 
-  public boolean isEmailUseTls() {
-    String tls = env.get("EMAIL_USE_TLS");
-    if (tls == null || tls.isBlank()) {
-      return env.getBoolean("SMTP_STARTTLS_ENABLE", true);
+  public boolean isEmailAuth() {
+    String auth = env.get("SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH");
+    if (auth == null || auth.isBlank()) {
+      auth = env.get("SMTP_AUTH");
     }
-    return Boolean.parseBoolean(tls.trim());
+    if (auth != null && !auth.isBlank()) {
+      return Boolean.parseBoolean(auth.trim());
+    }
+    String user = getEmailUsername();
+    return user != null && !user.isBlank();
+  }
+
+  public boolean isEmailUseTls() {
+    String tls = env.get("SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE");
+    if (tls == null || tls.isBlank()) {
+      tls = env.get("EMAIL_USE_TLS");
+    }
+    if (tls == null || tls.isBlank()) {
+      tls = env.get("SMTP_STARTTLS_ENABLE");
+    }
+    if (tls != null && !tls.isBlank()) {
+      return Boolean.parseBoolean(tls.trim());
+    }
+    return true;
   }
 
   public boolean isEmailConfigured() {
