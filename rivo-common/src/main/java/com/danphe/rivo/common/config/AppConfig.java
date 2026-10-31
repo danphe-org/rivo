@@ -147,4 +147,64 @@ public class AppConfig {
   public boolean isSessionCookieSecure() {
     return env.getBoolean("SESSION_COOKIE_SECURE", false);
   }
+
+  public String getEmailHost() {
+    String host = env.get("EMAIL_HOST");
+    if (host == null || host.isBlank()) {
+      host = env.get("SMTP_HOST", "");
+    }
+    return host;
+  }
+
+  public int getEmailPort() {
+    String port = env.get("EMAIL_PORT");
+    if (port == null || port.isBlank()) {
+      return env.getInt("SMTP_PORT", 587);
+    }
+    try {
+      return Integer.parseInt(port.trim());
+    } catch (NumberFormatException e) {
+      return 587;
+    }
+  }
+
+  public String getEmailUsername() {
+    String user = env.get("EMAIL_HOST_USER");
+    if (user == null || user.isBlank()) {
+      user = env.get("SMTP_USERNAME", "");
+    }
+    return user;
+  }
+
+  public String getEmailPassword() {
+    String pass = env.get("EMAIL_HOST_PASSWORD");
+    if (pass == null || pass.isBlank()) {
+      pass = env.get("SMTP_PASSWORD", "");
+    }
+    return pass;
+  }
+
+  public String getEmailFrom() {
+    String from = env.get("DEFAULT_FROM_EMAIL");
+    if (from == null || from.isBlank()) {
+      from = env.get("SMTP_FROM_EMAIL");
+    }
+    if (from == null || from.isBlank()) {
+      from = getEmailUsername();
+    }
+    return from != null && !from.isBlank() ? from : "noreply@rivo.com";
+  }
+
+  public boolean isEmailUseTls() {
+    String tls = env.get("EMAIL_USE_TLS");
+    if (tls == null || tls.isBlank()) {
+      return env.getBoolean("SMTP_STARTTLS_ENABLE", true);
+    }
+    return Boolean.parseBoolean(tls.trim());
+  }
+
+  public boolean isEmailConfigured() {
+    String host = getEmailHost();
+    return host != null && !host.isBlank();
+  }
 }
