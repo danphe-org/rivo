@@ -1,6 +1,7 @@
 package com.danphe.rivo.service.internal.clientuser;
 
 import com.danphe.rivo.common.library.base.common.Page;
+import com.danphe.rivo.common.library.base.exception.NotFoundException;
 import com.danphe.rivo.common.user.UserDomain;
 import com.danphe.rivo.common.user.UserFilter;
 import com.danphe.rivo.common.user.UserRole;
@@ -14,6 +15,7 @@ import com.danphe.rivo.service.internal.user.usecase.UserDeleteUseCase;
 import com.danphe.rivo.service.internal.user.usecase.UserGetUseCase;
 import com.danphe.rivo.service.internal.user.usecase.UserSearchUseCase;
 import com.danphe.rivo.service.internal.user.usecase.UserUpdateUseCase;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -59,8 +61,20 @@ public class ClientUserServiceImpl implements ClientUserService {
     domain.setCreatedBy("SELF_REGISTRATION");
     domain.setLastModifiedBy("SELF_REGISTRATION");
     domain.setRemark("User self-registration");
+    domain.setVerified(false);
     UserAddUseCase useCase = new UserAddUseCase(this.converter, this.auditDao, this.repository, this.passwordEncoder);
     return useCase.execute(domain);
+  }
+
+  @Override
+  public void markVerified(String userId) {
+    UserDomain user = repository.findById(userId)
+        .orElseThrow(() -> new NotFoundException("User not found with id: " + userId));
+    user.setVerified(true);
+    user.setActive(true);
+    user.setLastModifiedOn(LocalDateTime.now());
+    user.setLastModifiedBy("OTP_VERIFICATION");
+    repository.update(user);
   }
 
   @Override

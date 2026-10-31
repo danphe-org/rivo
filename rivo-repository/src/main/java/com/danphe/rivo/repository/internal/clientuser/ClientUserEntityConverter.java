@@ -16,6 +16,7 @@ public class ClientUserEntityConverter extends AbstractEntityConverter<UserDomai
     entity.setEmail(domain.getEmail());
     entity.setPassword(domain.getPassword());
     entity.setPhone(domain.getPhone());
+    entity.setVerified(domain.getVerified());
     return entity;
   }
 
@@ -28,6 +29,7 @@ public class ClientUserEntityConverter extends AbstractEntityConverter<UserDomai
     domain.setEmail(entity.getEmail());
     domain.setPassword(entity.getPassword());
     domain.setPhone(entity.getPhone());
+    domain.setVerified(entity.getVerified());
     return domain;
   }
 }

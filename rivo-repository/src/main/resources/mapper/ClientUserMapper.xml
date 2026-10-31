@@ -11,6 +11,7 @@
         <result property="email"          column="email"/>
         <result property="password"       column="password"/>
         <result property="phone"          column="phone"/>
+        <result property="verified"       column="verified"/>
         <result property="createdOn"      column="created_on"        javaType="java.time.LocalDateTime"/>
         <result property="createdBy"      column="created_by"/>
         <result property="lastModifiedOn" column="last_modified_on"  javaType="java.time.LocalDateTime"/>
@@ -41,7 +42,7 @@
     </resultMap>
 
     <sql id="baseColumns">
-        id, name, email, password, phone,
+        id, name, email, password, phone, verified,
         created_on, created_by, last_modified_on, last_modified_by,
         deleted_on, deleted_by, active, deleted, remark, version
     </sql>
@@ -68,6 +69,9 @@
             </if>
             <if test="filter.phone != null and filter.phone != ''">
                 AND phone = #{filter.phone}
+            </if>
+            <if test="filter.verified != null">
+                AND verified = #{filter.verified}
             </if>
             <if test="filter.role != null and filter.role != ''">
                 AND EXISTS (
@@ -142,11 +146,11 @@
 
     <insert id="insert">
         INSERT INTO client.client_users (
-            id, name, email, password, phone,
+            id, name, email, password, phone, verified,
             created_on, created_by, last_modified_on, last_modified_by,
             active, deleted, remark, version
         ) VALUES (
-            #{id}::uuid, #{name}, #{email}, #{password}, #{phone},
+            #{id}::uuid, #{name}, #{email}, #{password}, #{phone}, #{verified},
             #{createdOn}, #{createdBy}, #{lastModifiedOn}, #{lastModifiedBy},
             #{active}, #{deleted}, #{remark}, #{version}
         )
@@ -159,6 +163,7 @@
             <if test="email != null">email = #{email},</if>
             <if test="password != null">password = #{password},</if>
             <if test="phone != null">phone = #{phone},</if>
+            <if test="verified != null">verified = #{verified},</if>
             <if test="lastModifiedOn != null">last_modified_on = #{lastModifiedOn},</if>
             <if test="lastModifiedBy != null">last_modified_by = #{lastModifiedBy},</if>
             <if test="deletedOn != null">deleted_on = #{deletedOn},</if>

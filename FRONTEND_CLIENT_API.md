@@ -142,7 +142,7 @@ All search and filter endpoints accept a JSON filter body extending `AbstractFil
   - `access_token`: HttpOnly; Path=/; Max-Age=86400 (24 hours); SameSite=Lax
   - `refresh_token`: HttpOnly; Path=/; Max-Age=604800 (7 days); SameSite=Lax
 - **Errors**:
-  - `401 Unauthorized`: Invalid email or password (`{"code": "401", "message": "Invalid email or password"}`) or inactive account (`{"code": "401", "message": "User account is inactive"}`).
+  - `401 Unauthorized`: Invalid email or password (`{"code": "401", "message": "Invalid email or password"}`), inactive account (`{"code": "401", "message": "User account is inactive"}`), or unverified account (`{"code": "401", "message": "Account is not verified. Please verify your OTP."}`).
   - `429 Too Many Requests`: Exceeded 5 failed attempts within 1 minute.
 - **Response**: `200 OK`
   ```json
@@ -166,6 +166,7 @@ All search and filter endpoints accept a JSON filter body extending `AbstractFil
           "deleted": false
         }
       ],
+      "verified": true,
       "access_token": "<jwt-token>",
       "refresh_token": "<jwt-token>",
       "token_type": "Bearer",
@@ -182,7 +183,7 @@ All search and filter endpoints accept a JSON filter body extending `AbstractFil
 - **Authority / Permission**: None (🟢 **PUBLIC**)
 - **Method**: `POST`
 - **Path**: `/api/client/auth/register`
-- **Request Body (`UserRegisterDto`)**:
+- **Request Body (`RegisterRequest`)**:
   ```json
   {
     "name": "Jane Doe",
@@ -191,11 +192,129 @@ All search and filter endpoints accept a JSON filter body extending `AbstractFil
     "phone": "+1234567890"
   }
   ```
-- **Role Assignment**: Automatically assigned `role: "CLIENT"` by backend.
-- **Cookies Set**: Automatically logs in user (`access_token`, `refresh_token` cookies set).
-- **Response**: `200 OK` (`UserResponse` with tokens, matching login format).
+- **Verification Workflow**:
+  - Automatically creates client account with `verified: false`.
+  - Generates a 6-digit numeric OTP and dispatches it to the client's email (logged in development mode).
+  - No auth cookies are set at this stage. Account must be confirmed via `POST /api/client/auth/verify-otp`.
+- **Response**: `200 OK` (`UserResponse` without tokens, `verified: false`).
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": {
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Jane Doe",
+      "email": "jane.doe@example.com",
+      "phone": "+1234567890",
+      "role": "CLIENT",
+      "roles": [
+        {
+          "id": "c1234567-89ab-cdef-0123-456789abcdef",
+          "user_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "role": "CLIENT",
+          "created_on": "2026-10-31T08:00:00Z",
+          "modified_on": "2026-10-31T08:00:00Z",
+          "active": true,
+          "deleted": false
+        }
+      ],
+      "verified": false,
+      "created_on": "2026-10-31T08:00:00Z",
+      "modified_on": "2026-10-31T08:00:00Z",
+      "active": true,
+      "deleted": false
+    },
+    "time": "2026-10-31T08:00:00.123456"
+  }
+  ```
 
-### 3.3 Client Token Refresh (`POST /api/client/auth/refresh`)
+### 3.3 Client Verify OTP (`POST /api/client/auth/verify-otp`)
+- **Authority / Permission**: None (🟢 **PUBLIC**)
+- **Method**: `POST`
+- **Path**: `/api/client/auth/verify-otp`
+- **Request Body (`VerifyOtpRequest`)**:
+  ```json
+  {
+    "email": "jane.doe@example.com",
+    "otp": "481923"
+  }
+  ```
+- **Validation & Business Rules**:
+  - `email` must be a valid email format.
+  - `otp` must be a 6-digit number string (`^[0-9]{6}$`).
+  - Maximum 5 attempts allowed before OTP is invalidated.
+  - Validates OTP within its 5-minute validity window.
+  - On success, marks user `verified: true` and issues JWT access and refresh cookies.
+- **Cookies Set**:
+  - `access_token`: HttpOnly; Path=/; Max-Age=86400 (24 hours); SameSite=Lax
+  - `refresh_token`: HttpOnly; Path=/; Max-Age=604800 (7 days); SameSite=Lax
+- **Errors**:
+  - `400 Bad Request`: Invalid OTP (`{"code": "400", "message": "Invalid OTP. 4 attempt(s) remaining."}`), expired OTP (`{"code": "400", "message": "OTP has expired. Please request a new OTP."}`), maximum attempts exceeded (`{"code": "400", "message": "Maximum verification attempts exceeded. Please request a new OTP."}`), or already verified (`{"code": "400", "message": "Account is already verified"}`).
+  - `404 Not Found`: User not found with email.
+- **Response**: `200 OK` (`UserResponse` with tokens, `verified: true`).
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": {
+      "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "name": "Jane Doe",
+      "email": "jane.doe@example.com",
+      "phone": "+1234567890",
+      "role": "CLIENT",
+      "roles": [
+        {
+          "id": "c1234567-89ab-cdef-0123-456789abcdef",
+          "user_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "role": "CLIENT",
+          "created_on": "2026-10-31T08:00:00Z",
+          "modified_on": "2026-10-31T08:00:00Z",
+          "active": true,
+          "deleted": false
+        }
+      ],
+      "verified": true,
+      "access_token": "<jwt-token>",
+      "refresh_token": "<jwt-token>",
+      "token_type": "Bearer",
+      "created_on": "2026-10-31T08:00:00Z",
+      "modified_on": "2026-10-31T08:00:00Z",
+      "active": true,
+      "deleted": false
+    },
+    "time": "2026-10-31T08:00:00.123456"
+  }
+  ```
+
+### 3.4 Client Resend OTP (`POST /api/client/auth/resend-otp`)
+- **Authority / Permission**: None (🟢 **PUBLIC**)
+- **Method**: `POST`
+- **Path**: `/api/client/auth/resend-otp`
+- **Request Body (`ResendOtpRequest`)**:
+  ```json
+  {
+    "email": "jane.doe@example.com"
+  }
+  ```
+- **Cooldown & Throttling**:
+  - Enforces a 60-second cooldown period between resend attempts.
+  - Invalidates any previous unconsumed OTPs for the user upon generation of the new OTP.
+- **Errors**:
+  - `400 Bad Request`: Cooldown still active (`{"code": "400", "message": "Please wait 45 seconds before requesting a new OTP."}`) or account already verified (`{"code": "400", "message": "Account is already verified"}`).
+  - `404 Not Found`: User not found with email.
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": {
+      "message": "OTP resent successfully"
+    },
+    "time": "2026-10-31T08:00:00.123456"
+  }
+  ```
+
+### 3.5 Client Token Refresh (`POST /api/client/auth/refresh`)
 - **Authority / Permission**: Authenticated via `refresh_token` cookie or request body
 - **Method**: `POST`
 - **Path**: `/api/client/auth/refresh`
@@ -220,7 +339,7 @@ All search and filter endpoints accept a JSON filter body extending `AbstractFil
   }
   ```
 
-### 3.4 Client Logout (`POST /api/client/auth/logout`)
+### 3.6 Client Logout (`POST /api/client/auth/logout`)
 - **Authority / Permission**: None (🟢 **PUBLIC**)
 - **Method**: `POST`
 - **Path**: `/api/client/auth/logout`
@@ -235,7 +354,7 @@ All search and filter endpoints accept a JSON filter body extending `AbstractFil
   }
   ```
 
-### 3.5 Client Current User Profile (`GET /api/client/auth/me`)
+### 3.7 Client Current User Profile (`GET /api/client/auth/me`)
 - **Authority / Permission**: Authenticated (🔑 **AUTHENTICATED**)
 - **Method**: `GET`
 - **Path**: `/api/client/auth/me`

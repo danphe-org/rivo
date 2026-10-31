@@ -133,6 +133,10 @@ public class UserUpdateUseCase extends AbstractUpdateUseCase<UserDomain, UserDom
     } else {
       domain.setRole(domain.getRole().trim().toUpperCase());
     }
+
+    if (domain.getVerified() == null) {
+      domain.setVerified(oldDomain.getVerified());
+    }
   }
 
   @Override

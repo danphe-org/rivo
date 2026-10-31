@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.danphe.rivo.repository.internal.otp.ClientOtpMapper">
+
+    <resultMap id="clientOtpResultMap"
+               type="com.danphe.rivo.repository.internal.otp.ClientOtpEntity">
+        <id     property="id"                column="id"/>
+        <result property="identifier"        column="identifier"/>
+        <result property="otpHash"           column="otp_hash"/>
+        <result property="purpose"           column="purpose"/>
+        <result property="attempts"          column="attempts"/>
+        <result property="maxAttempts"       column="max_attempts"/>
+        <result property="resendAvailableAt" column="resend_available_at" javaType="java.time.LocalDateTime"/>
+        <result property="expiresAt"         column="expires_at"          javaType="java.time.LocalDateTime"/>
+        <result property="consumed"          column="consumed"/>
+        <result property="consumedAt"        column="consumed_at"         javaType="java.time.LocalDateTime"/>
+        <result property="createdOn"         column="created_on"          javaType="java.time.LocalDateTime"/>
+        <result property="createdBy"         column="created_by"/>
+        <result property="lastModifiedOn"    column="last_modified_on"     javaType="java.time.LocalDateTime"/>
+        <result property="lastModifiedBy"    column="last_modified_by"/>
+        <result property="deletedOn"         column="deleted_on"          javaType="java.time.LocalDateTime"/>
+        <result property="deletedBy"         column="deleted_by"/>
+        <result property="active"            column="active"/>
+        <result property="deleted"           column="deleted"/>
+        <result property="remark"            column="remark"/>
+        <result property="version"           column="version"/>
+    </resultMap>
+
+    <sql id="baseColumns">
+        id, identifier, otp_hash, purpose, attempts, max_attempts,
+        resend_available_at, expires_at, consumed, consumed_at,
+        created_on, created_by, last_modified_on, last_modified_by,
+        deleted_on, deleted_by, active, deleted, remark, version
+    </sql>
+
+    <insert id="insert">
+        INSERT INTO client.client_otps (
+            id, identifier, otp_hash, purpose, attempts, max_attempts,
+            resend_available_at, expires_at, consumed, consumed_at,
+            created_on, created_by, last_modified_on, last_modified_by,
+            active, deleted, remark, version
+        ) VALUES (
+            #{id}::uuid, #{identifier}, #{otpHash}, #{purpose}, #{attempts}, #{maxAttempts},
+            #{resendAvailableAt}, #{expiresAt}, #{consumed}, #{consumedAt},
+            #{createdOn}, #{createdBy}, #{lastModifiedOn}, #{lastModifiedBy},
+            #{active}, #{deleted}, #{remark}, #{version}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE client.client_otps
+        <set>
+            <if test="attempts != null">attempts = #{attempts},</if>
+            <if test="maxAttempts != null">max_attempts = #{maxAttempts},</if>
+            <if test="consumed != null">consumed = #{consumed},</if>
+            <if test="consumedAt != null">consumed_at = #{consumedAt},</if>
+            <if test="active != null">active = #{active},</if>
+            <if test="deleted != null">deleted = #{deleted},</if>
+            <if test="deletedOn != null">deleted_on = #{deletedOn},</if>
+            <if test="deletedBy != null">deleted_by = #{deletedBy},</if>
+            <if test="lastModifiedOn != null">last_modified_on = #{lastModifiedOn},</if>
+            <if test="lastModifiedBy != null">last_modified_by = #{lastModifiedBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="version != null">version = #{version},</if>
+        </set>
+        WHERE id = #{id}::uuid
+    </update>
+
+    <select id="findLatestActiveByIdentifierAndPurpose" resultMap="clientOtpResultMap">
+        SELECT <include refid="baseColumns"/>
+        FROM client.client_otps
+        WHERE LOWER(identifier) = LOWER(#{identifier})
+          AND purpose = #{purpose}
+          AND consumed = false
+          AND deleted = false
+          AND active = true
+        ORDER BY created_on DESC
+        LIMIT 1
+    </select>
+
+    <update id="invalidateExistingByIdentifierAndPurpose">
+        UPDATE client.client_otps
+        SET active = false,
+            deleted = true,
+            deleted_on = NOW(),
+            deleted_by = 'SYSTEM'
+        WHERE LOWER(identifier) = LOWER(#{identifier})
+          AND purpose = #{purpose}
+          AND consumed = false
+          AND deleted = false
+    </update>
+
+</mapper>

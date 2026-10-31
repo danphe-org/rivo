@@ -15,6 +15,7 @@ public record UserResponse(
     String phone,
     String role,
     List<UserRoleResponse> roles,
+    boolean verified,
     @JsonProperty("access_token")
     String accessToken,
     @JsonProperty("refresh_token")
@@ -45,6 +46,7 @@ public record UserResponse(
         domain.getPhone(),
         domain.getRole(),
         roleResponses,
+        domain.isVerified(),
         null,
         null,
         null,
@@ -70,6 +72,7 @@ public record UserResponse(
         domain.getPhone(),
         domain.getRole(),
         roleResponses,
+        domain.isVerified(),
         accessToken,
         refreshToken,
         "Bearer",

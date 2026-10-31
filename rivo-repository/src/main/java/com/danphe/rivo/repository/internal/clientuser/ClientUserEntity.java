@@ -13,4 +13,5 @@ public class ClientUserEntity extends AbstractEntity {
   private String email;
   private String password;
   private String phone;
+  private Boolean verified;
 }

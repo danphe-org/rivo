@@ -105,6 +105,10 @@ public class UserAddUseCase extends AbstractAddUseCase<UserDomain, UserDomain> {
       domain.setPassword(passwordEncoder.encode(domain.getPassword()));
     }
 
+    if (domain.getVerified() == null) {
+      domain.setVerified(false);
+    }
+
     UserRole assignedRole = domain.getRole() != null && !domain.getRole().isBlank()
         ? UserRole.fromString(domain.getRole())
         : UserRole.CLIENT;

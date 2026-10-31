@@ -30,6 +30,9 @@ public class UserDomain extends AbstractDomain {
   private String phone;
 
   @Builder.Default
+  private Boolean verified = false;
+
+  @Builder.Default
   private List<UserRoleDomain> roles = new ArrayList<>();
 
   private String role;
@@ -60,6 +63,10 @@ public class UserDomain extends AbstractDomain {
 
   public boolean isClient() {
     return getUserRole() == UserRole.CLIENT;
+  }
+
+  public boolean isVerified() {
+    return Boolean.TRUE.equals(this.verified);
   }
 
   public void setRole(String newRole) {

@@ -11,6 +11,7 @@ public class UserFilter extends AbstractFilter {
   private String email;
   private String role;
   private String phone;
+  private Boolean verified;
 
   @Override
   public String getSortColumn() {
