@@ -19,6 +19,7 @@ public class MatchRequestFilter extends AbstractFilter {
   private String status;
   private String game;
   private String category;
+  private String location;
   private Boolean urgent;
 
   @JsonAlias({"time_from", "timeFrom"})
@@ -45,6 +46,7 @@ public class MatchRequestFilter extends AbstractFilter {
     return switch (sortField.toLowerCase()) {
       case "game" -> "game";
       case "category" -> "category";
+      case "location" -> "location";
       case "requesttype", "request_type" -> "request_type";
       case "status" -> "status";
       case "time" -> "\"time\"";

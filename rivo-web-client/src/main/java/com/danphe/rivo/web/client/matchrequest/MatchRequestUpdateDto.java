@@ -25,6 +25,9 @@ public record MatchRequestUpdateDto(
 
     LocalDateTime time,
 
+    @Size(max = 255, message = "Location cannot exceed 255 characters")
+    String location,
+
     Boolean urgent
 ) {
   public MatchRequestDomain toDomain(String id) {
@@ -36,6 +39,7 @@ public record MatchRequestUpdateDto(
     domain.setCategory(category);
     domain.setMessage(message);
     domain.setTime(time);
+    domain.setLocation(location);
     if (urgent != null) {
       domain.setUrgent(urgent);
     }

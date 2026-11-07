@@ -88,6 +88,12 @@ public class MatchRequestUpdateUseCase
     if (domain.getTime() == null) {
       domain.setTime(oldDomain.getTime());
     }
+
+    if (domain.getLocation() == null) {
+      domain.setLocation(oldDomain.getLocation());
+    } else {
+      domain.setLocation(domain.getLocation().trim());
+    }
   }
 
   @Override

@@ -49,6 +49,9 @@ public class MatchRequestAddUseCase
     if (domain.getMessage() != null) {
       domain.setMessage(domain.getMessage().trim());
     }
+    if (domain.getLocation() != null) {
+      domain.setLocation(domain.getLocation().trim());
+    }
   }
 
   @Override

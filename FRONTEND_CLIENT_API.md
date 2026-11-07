@@ -430,6 +430,7 @@ Used by customers/players to find opponents or teammates for sports and gaming s
     "category": "5v5 Casual",
     "message": "Looking for a competitive 5v5 team tonight!",
     "time": "2026-10-30T19:00:00",
+    "location": "Dillibazar Futsal Arena, Kathmandu",
     "urgent": true
   }
   ```
@@ -439,6 +440,7 @@ Used by customers/players to find opponents or teammates for sports and gaming s
   - `category`: string, optional, `@Size(max = 100)`
   - `message`: string, optional, `@Size(max = 2000)`
   - `time`: string (ISO-8601 date-time), optional scheduled match time
+  - `location`: string, optional, `@Size(max = 255)`
   - `urgent`: boolean, optional (defaults to `false`)
 - **Response**: `200 OK`
   ```json
@@ -454,6 +456,7 @@ Used by customers/players to find opponents or teammates for sports and gaming s
       "category": "5v5 Casual",
       "message": "Looking for a competitive 5v5 team tonight!",
       "time": "2026-10-30T19:00:00",
+      "location": "Dillibazar Futsal Arena, Kathmandu",
       "urgent": true,
       "created_on": "2026-10-30T14:40:00",
       "modified_on": "2026-10-30T14:40:00",
@@ -489,6 +492,7 @@ Used by customers/players to find opponents or teammates for sports and gaming s
     "category": "5v5 Friendly",
     "message": "Updated match notes",
     "time": "2026-10-30T20:00:00",
+    "location": "Dillibazar Futsal Arena, Kathmandu",
     "urgent": false
   }
   ```
@@ -499,6 +503,7 @@ Used by customers/players to find opponents or teammates for sports and gaming s
   - `category`: string, optional, `@Size(max = 100)`
   - `message`: string, optional, `@Size(max = 2000)`
   - `time`: string (ISO-8601 date-time), optional
+  - `location`: string, optional, `@Size(max = 255)`
   - `urgent`: boolean, optional
 - **Response**: `200 OK` (`MatchRequestResponseDto`)
 
@@ -536,6 +541,7 @@ Used by customers/players to find opponents or teammates for sports and gaming s
     "game": "Futsal",
     "requestType": "OPPONENT",
     "status": "OPEN",
+    "location": "Kathmandu",
     "urgent": true,
     "requestedBy": "optional-user-id",
     "upcomingOnly": false,
@@ -545,11 +551,12 @@ Used by customers/players to find opponents or teammates for sports and gaming s
 - **Fields & Validations (`MatchRequestFilter`)**:
   - `pageNumber`: integer, page number (1-indexed, default 1)
   - `pageSize`: integer, page size limit (default 10)
-  - `sortField`: string, sort column (`created_on`, `time`, `game`, `category`, `status`, `request_type`, `urgent`)
+  - `sortField`: string, sort column (`created_on`, `time`, `game`, `category`, `location`, `status`, `request_type`, `urgent`)
   - `sortOrder`: string (`ASC` or `DESC`)
   - `game`: string, optional partial match
   - `requestType`: string, optional (`OPPONENT` or `TEAMMATE`)
   - `status`: string, optional (`OPEN`, `MATCHED`, `FILLED`, `CANCELLED`, `COMPLETED`)
+  - `location`: string, optional partial match
   - `urgent`: boolean, optional
   - `requestedBy`: string (UUID), optional user filter
   - `timeFrom`: string (ISO-8601 date-time), optional filter for match time >= timeFrom
@@ -557,6 +564,36 @@ Used by customers/players to find opponents or teammates for sports and gaming s
   - `upcomingOnly`: boolean, optional. When `true`, filters only future/upcoming match requests.
   - `pastOnly`: boolean, optional. When `true`, filters only past match requests (returns only the authenticated user's own past requests).
 - **Response**: `200 OK` (`Page<MatchRequestResponseDto>`)
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": {
+      "totalRecords": 1,
+      "limit": 10,
+      "currentPage": 1,
+      "data": [
+        {
+          "id": "e8334460-aefb-4171-872f-5ea3b1187c32",
+          "requested_by": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "request_type": "OPPONENT",
+          "status": "OPEN",
+          "game": "Futsal",
+          "category": "5v5 Casual",
+          "message": "Looking for a competitive 5v5 team tonight!",
+          "time": "2026-10-30T19:00:00",
+          "location": "Dillibazar Futsal Arena, Kathmandu",
+          "urgent": true,
+          "created_on": "2026-10-30T14:40:00",
+          "modified_on": "2026-10-30T14:40:00",
+          "active": true,
+          "deleted": false
+        }
+      ]
+    },
+    "time": "2026-10-30T14:45:00.123456"
+  }
+  ```
   ```json
   {
     "code": "0",

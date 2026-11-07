@@ -18,6 +18,7 @@ public class MatchRequestEntity extends AbstractEntity {
   private String category;
   private String message;
   private LocalDateTime time;
+  private String location;
   private boolean urgent;
 
   private String requestedByName;

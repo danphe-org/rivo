@@ -21,6 +21,7 @@ public record MatchRequestResponseDto(
     String category,
     String message,
     LocalDateTime time,
+    String location,
     boolean urgent,
     @JsonProperty("created_on")
     LocalDateTime createdOn,
@@ -46,6 +47,7 @@ public record MatchRequestResponseDto(
         domain.getCategory(),
         domain.getMessage(),
         domain.getTime(),
+        domain.getLocation(),
         domain.isUrgent(),
         domain.getCreatedOn(),
         domain.getLastModifiedOn(),

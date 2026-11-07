@@ -577,6 +577,7 @@ Full administrative oversight, moderation, creation, update, deletion, and searc
     "category": "5v5 Tournament",
     "message": "Official administrative tournament match request",
     "time": "2026-10-30T19:00:00",
+    "location": "Dillibazar Futsal Arena, Kathmandu",
     "urgent": true
   }
   ```
@@ -586,6 +587,7 @@ Full administrative oversight, moderation, creation, update, deletion, and searc
   - `category`: string, optional, `@Size(max = 100)`
   - `message`: string, optional, `@Size(max = 2000)`
   - `time`: string (ISO-8601 date-time), optional
+  - `location`: string, optional, `@Size(max = 255)`
   - `urgent`: boolean, optional
 - **Response**: `200 OK` (`MatchRequestResponseDto`)
   ```json
@@ -601,6 +603,7 @@ Full administrative oversight, moderation, creation, update, deletion, and searc
       "category": "5v5 Tournament",
       "message": "Official administrative tournament match request",
       "time": "2026-10-30T19:00:00",
+      "location": "Dillibazar Futsal Arena, Kathmandu",
       "urgent": true,
       "created_on": "2026-10-30T14:40:00",
       "modified_on": "2026-10-30T14:40:00",
@@ -635,6 +638,7 @@ Full administrative oversight, moderation, creation, update, deletion, and searc
     "category": "5v5 Tournament",
     "message": "Updated match notes and status",
     "time": "2026-10-30T20:00:00",
+    "location": "Dillibazar Futsal Arena, Kathmandu",
     "urgent": false
   }
   ```
@@ -645,6 +649,7 @@ Full administrative oversight, moderation, creation, update, deletion, and searc
   - `category`: string, optional, `@Size(max = 100)`
   - `message`: string, optional, `@Size(max = 2000)`
   - `time`: string (ISO-8601 date-time), optional
+  - `location`: string, optional, `@Size(max = 255)`
   - `urgent`: boolean, optional
 - **Response**: `200 OK` (`MatchRequestResponseDto`)
 
@@ -678,6 +683,7 @@ Full administrative oversight, moderation, creation, update, deletion, and searc
     "game": "Futsal",
     "requestType": "OPPONENT",
     "status": "OPEN",
+    "location": "Kathmandu",
     "urgent": true,
     "requestedBy": "optional-user-id",
     "upcomingOnly": false,
@@ -687,11 +693,12 @@ Full administrative oversight, moderation, creation, update, deletion, and searc
 - **Fields & Validations (`MatchRequestFilter`)**:
   - `pageNumber`: integer, page number (1-indexed, default 1)
   - `pageSize`: integer, page size limit (default 10)
-  - `sortField`: string, sort column (`created_on`, `time`, `game`, `category`, `status`, `request_type`, `urgent`)
+  - `sortField`: string, sort column (`created_on`, `time`, `game`, `category`, `location`, `status`, `request_type`, `urgent`)
   - `sortOrder`: string (`ASC` or `DESC`)
   - `game`: string, optional partial match
   - `requestType`: string, optional (`OPPONENT` or `TEAMMATE`)
   - `status`: string, optional (`OPEN`, `MATCHED`, `FILLED`, `CANCELLED`, `COMPLETED`)
+  - `location`: string, optional partial match
   - `urgent`: boolean, optional
   - `requestedBy`: string (UUID), optional user filter
   - `timeFrom`: string (ISO-8601 date-time), optional
