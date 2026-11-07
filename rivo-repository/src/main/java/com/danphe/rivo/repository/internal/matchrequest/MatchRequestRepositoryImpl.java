@@ -66,11 +66,17 @@ public class MatchRequestRepositoryImpl implements MatchRequestRepository {
 
   @Override
   public List<MatchRequestDomain> findAll(MatchRequestFilter filter) {
+    if (filter != null && filter.getNow() == null) {
+      filter.setNow(LocalDateTime.now());
+    }
     return converter.toDomainList(mapper.findAllWithoutPagination(filter));
   }
 
   @Override
   public Page<MatchRequestDomain> findAllWithPagination(MatchRequestFilter filter) {
+    if (filter != null && filter.getNow() == null) {
+      filter.setNow(LocalDateTime.now());
+    }
     List<MatchRequestDomain> data = converter.toDomainList(mapper.findAll(filter));
     int total = mapper.countAll(filter);
     return new Page<>(total, filter.getPageSize(), filter.getPageNumber(), data);

@@ -471,6 +471,7 @@ Used by customers/players to find opponents or teammates for sports and gaming s
 - **Method**: `GET`
 - **Path**: `/api/client/match-requests/{id}`
 - **Path Parameters**: `id` (UUID string)
+- **Authorization & Visibility Rule**: Users only get to see match requests that are in the future (`time` is in the future or not specified). Only the user who posted/created the request can view their own past match requests. If a user attempts to retrieve another user's past match request, the API responds with `403 Forbidden` (`"Access denied: You cannot view past match requests posted by other users"`). System administrators can view any match request.
 - **Response**: `200 OK` (`MatchRequestResponseDto`)
 
 ### 5.3 Update Match Request by ID (`PUT /api/client/match-requests/{id}`)
@@ -521,6 +522,10 @@ Used by customers/players to find opponents or teammates for sports and gaming s
 - **Authority / Permission**: Authenticated (🔑 **AUTHENTICATED**)
 - **Method**: `POST`
 - **Path**: `/api/client/match-requests/search`
+- **Visibility & Access Rules**:
+  - **Future vs. Past Requests**: Users only get to see match requests that are in the future (`time` is in the future or not specified).
+  - **Own Past Requests**: Only the user who posted a match request can see their own past requests. Other users' past requests are automatically filtered out.
+  - **System Administrators**: Administrative accounts can view all match requests without time restriction.
 - **Request Body (`MatchRequestFilter`)**:
   ```json
   {
@@ -532,9 +537,25 @@ Used by customers/players to find opponents or teammates for sports and gaming s
     "requestType": "OPPONENT",
     "status": "OPEN",
     "urgent": true,
-    "requestedBy": "optional-user-id"
+    "requestedBy": "optional-user-id",
+    "upcomingOnly": false,
+    "pastOnly": false
   }
   ```
+- **Fields & Validations (`MatchRequestFilter`)**:
+  - `pageNumber`: integer, page number (1-indexed, default 1)
+  - `pageSize`: integer, page size limit (default 10)
+  - `sortField`: string, sort column (`created_on`, `time`, `game`, `category`, `status`, `request_type`, `urgent`)
+  - `sortOrder`: string (`ASC` or `DESC`)
+  - `game`: string, optional partial match
+  - `requestType`: string, optional (`OPPONENT` or `TEAMMATE`)
+  - `status`: string, optional (`OPEN`, `MATCHED`, `FILLED`, `CANCELLED`, `COMPLETED`)
+  - `urgent`: boolean, optional
+  - `requestedBy`: string (UUID), optional user filter
+  - `timeFrom`: string (ISO-8601 date-time), optional filter for match time >= timeFrom
+  - `timeTo`: string (ISO-8601 date-time), optional filter for match time <= timeTo
+  - `upcomingOnly`: boolean, optional. When `true`, filters only future/upcoming match requests.
+  - `pastOnly`: boolean, optional. When `true`, filters only past match requests (returns only the authenticated user's own past requests).
 - **Response**: `200 OK` (`Page<MatchRequestResponseDto>`)
   ```json
   {

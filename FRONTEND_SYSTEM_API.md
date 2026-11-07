@@ -618,6 +618,7 @@ Full administrative oversight, moderation, creation, update, deletion, and searc
 - **Method**: `GET`
 - **Path**: `/api/system/match-requests/{id}`
 - **Path Parameters**: `id` (UUID string)
+- **Administrative Access**: Administrators and staff can view all match requests, both past and future.
 - **Response**: `200 OK` (`MatchRequestResponseDto`)
 
 ### 7.3 Update Match Request by ID (`PUT /api/system/match-requests/{id}`)
@@ -666,6 +667,7 @@ Full administrative oversight, moderation, creation, update, deletion, and searc
 - **Authority / Permission**: Administrative / System User (🔒 **ROLE_RESTRICTED**: `SYSTEM_USER`, `ADMIN`, `STAFF`)
 - **Method**: `POST`
 - **Path**: `/api/system/match-requests/search`
+- **Administrative Access**: Full access to search all match requests (future and past). Can filter specifically using `upcomingOnly` or `pastOnly`.
 - **Request Body (`MatchRequestFilter`)**:
   ```json
   {
@@ -677,7 +679,25 @@ Full administrative oversight, moderation, creation, update, deletion, and searc
     "requestType": "OPPONENT",
     "status": "OPEN",
     "urgent": true,
-    "requestedBy": "optional-user-id"
+    "requestedBy": "optional-user-id",
+    "upcomingOnly": false,
+    "pastOnly": false
+  }
+  ```
+- **Fields & Validations (`MatchRequestFilter`)**:
+  - `pageNumber`: integer, page number (1-indexed, default 1)
+  - `pageSize`: integer, page size limit (default 10)
+  - `sortField`: string, sort column (`created_on`, `time`, `game`, `category`, `status`, `request_type`, `urgent`)
+  - `sortOrder`: string (`ASC` or `DESC`)
+  - `game`: string, optional partial match
+  - `requestType`: string, optional (`OPPONENT` or `TEAMMATE`)
+  - `status`: string, optional (`OPEN`, `MATCHED`, `FILLED`, `CANCELLED`, `COMPLETED`)
+  - `urgent`: boolean, optional
+  - `requestedBy`: string (UUID), optional user filter
+  - `timeFrom`: string (ISO-8601 date-time), optional
+  - `timeTo`: string (ISO-8601 date-time), optional
+  - `upcomingOnly`: boolean, optional. When `true`, filters only future/upcoming match requests.
+  - `pastOnly`: boolean, optional. When `true`, filters only past match requests.
   }
   ```
 - **Response**: `200 OK` (`Page<MatchRequestResponseDto>`)

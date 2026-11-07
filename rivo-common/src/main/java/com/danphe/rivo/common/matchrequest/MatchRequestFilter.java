@@ -1,6 +1,7 @@
 package com.danphe.rivo.common.matchrequest;
 
 import com.danphe.rivo.common.library.base.filter.AbstractFilter;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,14 +10,32 @@ import lombok.Setter;
 @Setter
 public class MatchRequestFilter extends AbstractFilter {
 
+  @JsonAlias({"requested_by", "requestedBy"})
   private String requestedBy;
+
+  @JsonAlias({"request_type", "requestType"})
   private String requestType;
+
   private String status;
   private String game;
   private String category;
   private Boolean urgent;
+
+  @JsonAlias({"time_from", "timeFrom"})
   private LocalDateTime timeFrom;
+
+  @JsonAlias({"time_to", "timeTo"})
   private LocalDateTime timeTo;
+
+  @JsonAlias({"upcoming_only", "upcomingOnly"})
+  private Boolean upcomingOnly;
+
+  @JsonAlias({"past_only", "pastOnly"})
+  private Boolean pastOnly;
+
+  private String viewerId;
+  private Boolean admin;
+  private LocalDateTime now;
 
   @Override
   public String getSortColumn() {

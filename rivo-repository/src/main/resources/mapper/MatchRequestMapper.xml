@@ -72,6 +72,64 @@
             <if test="filter.timeTo != null">
                 AND mr."time" &lt;= #{filter.timeTo}
             </if>
+            <if test="filter.upcomingOnly != null and filter.upcomingOnly">
+                <choose>
+                    <when test="filter.now != null">
+                        AND (mr."time" IS NULL OR mr."time" &gt;= #{filter.now, javaType=java.time.LocalDateTime})
+                    </when>
+                    <otherwise>
+                        AND (mr."time" IS NULL OR mr."time" &gt;= LOCALTIMESTAMP)
+                    </otherwise>
+                </choose>
+            </if>
+            <if test="filter.pastOnly != null and filter.pastOnly">
+                <choose>
+                    <when test="filter.now != null">
+                        AND (mr."time" IS NOT NULL AND mr."time" &lt; #{filter.now, javaType=java.time.LocalDateTime})
+                    </when>
+                    <otherwise>
+                        AND (mr."time" IS NOT NULL AND mr."time" &lt; LOCALTIMESTAMP)
+                    </otherwise>
+                </choose>
+            </if>
+            <if test="filter.admin == null or !filter.admin">
+                <choose>
+                    <when test="filter.viewerId != null and filter.viewerId != ''">
+                        <choose>
+                            <when test="filter.now != null">
+                                AND (
+                                    mr."time" IS NULL
+                                    OR mr."time" &gt;= #{filter.now, javaType=java.time.LocalDateTime}
+                                    OR mr.requested_by = #{filter.viewerId}::uuid
+                                )
+                            </when>
+                            <otherwise>
+                                AND (
+                                    mr."time" IS NULL
+                                    OR mr."time" &gt;= LOCALTIMESTAMP
+                                    OR mr.requested_by = #{filter.viewerId}::uuid
+                                )
+                            </otherwise>
+                        </choose>
+                    </when>
+                    <otherwise>
+                        <choose>
+                            <when test="filter.now != null">
+                                AND (
+                                    mr."time" IS NULL
+                                    OR mr."time" &gt;= #{filter.now, javaType=java.time.LocalDateTime}
+                                )
+                            </when>
+                            <otherwise>
+                                AND (
+                                    mr."time" IS NULL
+                                    OR mr."time" &gt;= LOCALTIMESTAMP
+                                )
+                            </otherwise>
+                        </choose>
+                    </otherwise>
+                </choose>
+            </if>
             <if test="filter.active != null">
                 AND mr.active = #{filter.active}
             </if>
