@@ -13,6 +13,7 @@ import com.danphe.rivo.service.internal.matchrequest.usecase.MatchRequestDeleteU
 import com.danphe.rivo.service.internal.matchrequest.usecase.MatchRequestGetUseCase;
 import com.danphe.rivo.service.internal.matchrequest.usecase.MatchRequestSearchUseCase;
 import com.danphe.rivo.service.internal.matchrequest.usecase.MatchRequestUpdateUseCase;
+import com.danphe.rivo.service.internal.matchrequest.validator.MatchRequestMasterDataValidator;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -21,19 +22,22 @@ public class MatchRequestServiceImpl implements MatchRequestService {
   private final MatchRequestRepository repository;
   private final MatchRequestEntityConverter converter;
   private final AuditDao auditDao;
+  private final MatchRequestMasterDataValidator masterDataValidator;
 
   public MatchRequestServiceImpl(
       MatchRequestRepository repository,
       MatchRequestEntityConverter converter,
-      AuditDao auditDao) {
+      AuditDao auditDao,
+      MatchRequestMasterDataValidator masterDataValidator) {
     this.repository = repository;
     this.converter = converter;
     this.auditDao = auditDao;
+    this.masterDataValidator = masterDataValidator;
   }
 
   @Override
   public MatchRequestDomain insert(MatchRequestDomain domain, UserDomain actor) {
-    return new MatchRequestAddUseCase(converter, auditDao, repository, actor).execute(domain);
+    return new MatchRequestAddUseCase(converter, auditDao, repository, masterDataValidator, actor).execute(domain);
   }
 
   @Override
@@ -43,7 +47,7 @@ public class MatchRequestServiceImpl implements MatchRequestService {
 
   @Override
   public MatchRequestDomain update(MatchRequestDomain domain, UserDomain actor) {
-    return new MatchRequestUpdateUseCase(converter, auditDao, repository, actor).execute(domain);
+    return new MatchRequestUpdateUseCase(converter, auditDao, repository, masterDataValidator, actor).execute(domain);
   }
 
   @Override

@@ -11,5 +11,7 @@ public interface MasterDataItemRepository
 
   List<MasterDataItemDomain> findByMasterDataId(String masterDataId);
 
+  List<MasterDataItemDomain> findByMasterDataCode(String masterDataCode);
+
   Optional<MasterDataItemDomain> findByMasterDataIdAndTitle(String masterDataId, String title);
 }

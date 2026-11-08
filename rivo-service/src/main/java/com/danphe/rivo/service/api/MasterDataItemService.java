@@ -14,6 +14,8 @@ public interface MasterDataItemService {
 
   List<MasterDataItemDomain> getByMasterDataId(String masterDataId, UserDomain actor);
 
+  List<MasterDataItemDomain> getByMasterDataCode(String masterDataCode, UserDomain actor);
+
   MasterDataItemDomain update(MasterDataItemDomain domain, UserDomain actor);
 
   void delete(String id, UserDomain actor);

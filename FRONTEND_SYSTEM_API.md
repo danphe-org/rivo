@@ -573,11 +573,12 @@ Full administrative oversight, moderation, creation, update, deletion, and searc
   ```json
   {
     "game": "Futsal",
-    "request_type": "OPPONENT",
+    "request_type": "TEAMMATE",
     "category": "5v5 Tournament",
-    "message": "Official administrative tournament match request",
+    "message": "Official administrative tournament teammate request",
     "time": "2026-10-30T19:00:00",
     "location": "Dillibazar Futsal Arena, Kathmandu",
+    "players_needed": 3,
     "urgent": true
   }
   ```
@@ -588,6 +589,7 @@ Full administrative oversight, moderation, creation, update, deletion, and searc
   - `message`: string, optional, `@Size(max = 2000)`
   - `time`: string (ISO-8601 date-time), optional
   - `location`: string, optional, `@Size(max = 255)`
+  - `players_needed`: integer, optional (`@Min(1)`, `@Max(100)`). Number of players needed for teammate requests.
   - `urgent`: boolean, optional
 - **Response**: `200 OK` (`MatchRequestResponseDto`)
   ```json
@@ -597,13 +599,14 @@ Full administrative oversight, moderation, creation, update, deletion, and searc
     "data": {
       "id": "e8334460-aefb-4171-872f-5ea3b1187c32",
       "requested_by": "e8334460-aefb-4171-872f-5ea3b1187c32",
-      "request_type": "OPPONENT",
+      "request_type": "TEAMMATE",
       "status": "OPEN",
       "game": "Futsal",
       "category": "5v5 Tournament",
-      "message": "Official administrative tournament match request",
+      "message": "Official administrative tournament teammate request",
       "time": "2026-10-30T19:00:00",
       "location": "Dillibazar Futsal Arena, Kathmandu",
+      "players_needed": 3,
       "urgent": true,
       "created_on": "2026-10-30T14:40:00",
       "modified_on": "2026-10-30T14:40:00",
@@ -633,12 +636,13 @@ Full administrative oversight, moderation, creation, update, deletion, and searc
   ```json
   {
     "game": "Futsal",
-    "request_type": "OPPONENT",
+    "request_type": "TEAMMATE",
     "status": "MATCHED",
     "category": "5v5 Tournament",
     "message": "Updated match notes and status",
     "time": "2026-10-30T20:00:00",
     "location": "Dillibazar Futsal Arena, Kathmandu",
+    "players_needed": 2,
     "urgent": false
   }
   ```
@@ -650,6 +654,7 @@ Full administrative oversight, moderation, creation, update, deletion, and searc
   - `message`: string, optional, `@Size(max = 2000)`
   - `time`: string (ISO-8601 date-time), optional
   - `location`: string, optional, `@Size(max = 255)`
+  - `players_needed`: integer, optional (`@Min(1)`, `@Max(100)`). Number of players needed for teammate requests.
   - `urgent`: boolean, optional
 - **Response**: `200 OK` (`MatchRequestResponseDto`)
 
@@ -681,9 +686,10 @@ Full administrative oversight, moderation, creation, update, deletion, and searc
     "sortField": "created_on",
     "sortOrder": "DESC",
     "game": "Futsal",
-    "requestType": "OPPONENT",
+    "requestType": "TEAMMATE",
     "status": "OPEN",
     "location": "Kathmandu",
+    "players_needed": 3,
     "urgent": true,
     "requestedBy": "optional-user-id",
     "upcomingOnly": false,
@@ -693,12 +699,13 @@ Full administrative oversight, moderation, creation, update, deletion, and searc
 - **Fields & Validations (`MatchRequestFilter`)**:
   - `pageNumber`: integer, page number (1-indexed, default 1)
   - `pageSize`: integer, page size limit (default 10)
-  - `sortField`: string, sort column (`created_on`, `time`, `game`, `category`, `location`, `status`, `request_type`, `urgent`)
+  - `sortField`: string, sort column (`created_on`, `time`, `game`, `category`, `location`, `players_needed`, `status`, `request_type`, `urgent`)
   - `sortOrder`: string (`ASC` or `DESC`)
   - `game`: string, optional partial match
   - `requestType`: string, optional (`OPPONENT` or `TEAMMATE`)
   - `status`: string, optional (`OPEN`, `MATCHED`, `FILLED`, `CANCELLED`, `COMPLETED`)
   - `location`: string, optional partial match
+  - `players_needed`: integer, optional filter for player count
   - `urgent`: boolean, optional
   - `requestedBy`: string (UUID), optional user filter
   - `timeFrom`: string (ISO-8601 date-time), optional
@@ -735,5 +742,68 @@ Full administrative oversight, moderation, creation, update, deletion, and searc
       ]
     },
     "time": "2026-10-30T14:45:00.123456"
+  }
+  ```
+
+---
+
+## 8. Categories (`/api/system/categories`)
+
+Administrative reference endpoints for predefined categories.
+
+### 8.1 List All Categories (`GET /api/system/categories`)
+- **Authority / Permission**: Administrative / System User (🔒 **ROLE_RESTRICTED**: `SYSTEM_USER`, `ADMIN`, `STAFF`)
+- **Method**: `GET`
+- **Path**: `/api/system/categories`
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": [
+      {
+        "code": "E_SPORTS",
+        "name": "E-Sports",
+        "slug": "e-sports",
+        "description": "Electronic sports and competitive video gaming",
+        "master_data_code": "ESPORTS_GAMES"
+      },
+      {
+        "code": "SPORTS",
+        "name": "Sports",
+        "slug": "sports",
+        "description": "Physical outdoor and indoor sports",
+        "master_data_code": "SPORTS_GAMES"
+      },
+      {
+        "code": "TRAVEL",
+        "name": "Travel",
+        "slug": "travel",
+        "description": "Travel, outdoor adventures, and tours",
+        "master_data_code": "TRAVEL_ACTIVITIES"
+      }
+    ],
+    "time": "2026-11-07T10:55:00.123456"
+  }
+  ```
+
+### 8.2 Get Category by Code or Slug (`GET /api/system/categories/{code}`)
+- **Authority / Permission**: Administrative / System User (🔒 **ROLE_RESTRICTED**: `SYSTEM_USER`, `ADMIN`, `STAFF`)
+- **Method**: `GET`
+- **Path**: `/api/system/categories/{code}`
+- **Path Parameters**: `code` (string, case-insensitive match by code e.g. `E_SPORTS`, name `E-Sports`, or slug `e-sports`)
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": {
+      "code": "E_SPORTS",
+      "name": "E-Sports",
+      "slug": "e-sports",
+      "description": "Electronic sports and competitive video gaming",
+      "master_data_code": "ESPORTS_GAMES"
+    },
+    "time": "2026-11-07T10:55:00.123456"
   }
   ```

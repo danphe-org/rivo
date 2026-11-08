@@ -20,6 +20,10 @@ public class MatchRequestFilter extends AbstractFilter {
   private String game;
   private String category;
   private String location;
+
+  @JsonAlias({"players_needed", "playersNeeded", "player_count", "players_count", "playersCount", "numberOfPlayers", "number_of_players"})
+  private Integer playersNeeded;
+
   private Boolean urgent;
 
   @JsonAlias({"time_from", "timeFrom"})
@@ -47,6 +51,7 @@ public class MatchRequestFilter extends AbstractFilter {
       case "game" -> "game";
       case "category" -> "category";
       case "location" -> "location";
+      case "playersneeded", "players_needed", "playercount", "player_count" -> "players_needed";
       case "requesttype", "request_type" -> "request_type";
       case "status" -> "status";
       case "time" -> "\"time\"";

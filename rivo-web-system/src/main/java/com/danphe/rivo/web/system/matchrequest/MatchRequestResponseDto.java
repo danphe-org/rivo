@@ -22,6 +22,8 @@ public record MatchRequestResponseDto(
     String message,
     LocalDateTime time,
     String location,
+    @JsonProperty("players_needed")
+    Integer playersNeeded,
     boolean urgent,
     @JsonProperty("created_on")
     LocalDateTime createdOn,
@@ -48,6 +50,7 @@ public record MatchRequestResponseDto(
         domain.getMessage(),
         domain.getTime(),
         domain.getLocation(),
+        domain.getPlayersNeeded(),
         domain.isUrgent(),
         domain.getCreatedOn(),
         domain.getLastModifiedOn(),

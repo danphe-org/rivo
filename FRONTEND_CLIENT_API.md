@@ -417,31 +417,59 @@ All search and filter endpoints accept a JSON filter body extending `AbstractFil
 
 Used by customers/players to find opponents or teammates for sports and gaming sessions.
 
+> [!IMPORTANT]
+> **DATABASE MASTER DATA VALIDATION RULE**:
+> All `category` and `game` values provided when creating or updating a match request **MUST exist in the database's master data** (`system.master_data` and `system.master_data_items`) created by system users:
+> 1. **`category` validation**: Must match an active category in master data (e.g. `SPORTS`, `E_SPORTS`, `TRAVEL`, or any custom category added by system admins). Matches by code, title, or UUID.
+> 2. **`game` validation**: Must match an active game/activity defined under that specific category in master data (e.g. `Futsal` under `SPORTS`; `Valorant` under `E_SPORTS`; `Hiking` under `TRAVEL`). Cross-category submissions (e.g. `category: "SPORTS"` with `game: "Valorant"`) will fail with an HTTP 400 error.
+> 3. Frontend applications should always populate Category and Game selectors dynamically from the Master Data / Categories APIs (`GET /api/client/categories/tree` or `GET /api/client/categories/{code}/items`).
+
 ### 5.1 Create Match Request (`POST /api/client/match-requests`)
 - **Authority / Permission**: Authenticated (🔑 **AUTHENTICATED**)
 - **Method**: `POST`
 - **Path**: `/api/client/match-requests`
-- **Description**: Creates a new match request looking for opponents or teammates. Only logged-in users can create requests. `requested_by` is automatically set to the authenticated user's ID.
+- **Description**: Creates a new match request looking for opponents or teammates. Only logged-in users can create requests. `requested_by` is automatically set to the authenticated user's ID. When looking for teammates (`request_type` = `TEAMMATE`), you can specify the number of players needed via `players_needed` (defaults to 1). For opponent challenges (`request_type` = `OPPONENT`), `players_needed` is automatically set to null.
 - **Request Body (`MatchRequestCreateDto`)**:
   ```json
   {
+    "category": "SPORTS",
     "game": "Futsal",
-    "request_type": "OPPONENT",
-    "category": "5v5 Casual",
-    "message": "Looking for a competitive 5v5 team tonight!",
-    "time": "2026-10-30T19:00:00",
+    "request_type": "TEAMMATE",
+    "message": "Looking for 2 players to join our futsal team tonight!",
+    "time": "2026-11-08T19:00:00",
     "location": "Dillibazar Futsal Arena, Kathmandu",
+    "players_needed": 2,
     "urgent": true
   }
   ```
 - **Fields & Validations (`MatchRequestCreateDto`)**:
-  - `game`: string, **required**, `@NotBlank`, `@Size(max = 100)`
+  - `category`: string, **required**, `@Size(max = 100)`. Must exist in DB master data under `CATEGORY` (e.g. `"SPORTS"`, `"E_SPORTS"`, `"TRAVEL"`).
+  - `game`: string, **required**, `@NotBlank`, `@Size(max = 100)`. Must be a valid active game/activity in DB master data under the selected `category`.
   - `request_type`: string, **required**, `@NotNull`, `@Pattern("OPPONENT|TEAMMATE")`
-  - `category`: string, optional, `@Size(max = 100)`
   - `message`: string, optional, `@Size(max = 2000)`
   - `time`: string (ISO-8601 date-time), optional scheduled match time
   - `location`: string, optional, `@Size(max = 255)`
+  - `players_needed`: integer, optional (`@Min(1)`, `@Max(100)`). Number of players wanted when `request_type` is `TEAMMATE` (defaults to 1 if omitted). Ignored/null for `OPPONENT` requests. Also accepts aliases `player_count`, `players_count`, `playersNeeded`.
   - `urgent`: boolean, optional (defaults to `false`)
+- **Validation Errors (`HTTP 400 Bad Request`)**:
+  - If `category` is invalid or not in master data:
+    ```json
+    {
+      "code": "400",
+      "message": "Invalid category: '5v5 Casual'. Category must be an active category defined in master data.",
+      "data": null,
+      "time": "2026-11-08T10:30:00.123456"
+    }
+    ```
+  - If `game` does not exist under the specified `category` in master data:
+    ```json
+    {
+      "code": "400",
+      "message": "Invalid game: 'Valorant'. Game must be a valid active game/activity under category 'SPORTS' from master data.",
+      "data": null,
+      "time": "2026-11-08T10:30:00.123456"
+    }
+    ```
 - **Response**: `200 OK`
   ```json
   {
@@ -450,22 +478,23 @@ Used by customers/players to find opponents or teammates for sports and gaming s
     "data": {
       "id": "e8334460-aefb-4171-872f-5ea3b1187c32",
       "requested_by": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-      "request_type": "OPPONENT",
+      "request_type": "TEAMMATE",
       "status": "OPEN",
+      "category": "SPORTS",
       "game": "Futsal",
-      "category": "5v5 Casual",
-      "message": "Looking for a competitive 5v5 team tonight!",
-      "time": "2026-10-30T19:00:00",
+      "message": "Looking for 2 players to join our futsal team tonight!",
+      "time": "2026-11-08T19:00:00",
       "location": "Dillibazar Futsal Arena, Kathmandu",
+      "players_needed": 2,
       "urgent": true,
-      "created_on": "2026-10-30T14:40:00",
-      "modified_on": "2026-10-30T14:40:00",
+      "created_on": "2026-11-08T10:30:00",
+      "modified_on": "2026-11-08T10:30:00",
       "created_by": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
       "modified_by": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
       "active": true,
       "deleted": false
     },
-    "time": "2026-10-30T14:40:00.123456"
+    "time": "2026-11-08T10:30:00.123456"
   }
   ```
 
@@ -482,28 +511,32 @@ Used by customers/players to find opponents or teammates for sports and gaming s
 - **Method**: `PUT`
 - **Path**: `/api/client/match-requests/{id}`
 - **Path Parameters**: `id` (UUID string)
-- **Authorization & Usecase Validation**: Only the user who **created** the request can update it. Any other user attempting to update it receives `403 Forbidden` (`"Access denied: You can only update match requests you have created"`).
+- **Authorization & Usecase Validation**:
+  - Only the user who **created** the request can update it. Any other user attempting to update it receives `403 Forbidden` (`"Access denied: You can only update match requests you have created"`).
+  - If `category` or `game` are updated, they are re-validated against active database master data (same rules as creation). Submitting an unknown category or cross-category game returns `400 Bad Request`.
 - **Request Body (`MatchRequestUpdateDto`)**:
   ```json
   {
+    "category": "SPORTS",
     "game": "Futsal",
-    "request_type": "OPPONENT",
+    "request_type": "TEAMMATE",
     "status": "OPEN",
-    "category": "5v5 Friendly",
-    "message": "Updated match notes",
-    "time": "2026-10-30T20:00:00",
+    "message": "Updated match notes: need 2 more players now",
+    "time": "2026-11-08T20:00:00",
     "location": "Dillibazar Futsal Arena, Kathmandu",
+    "players_needed": 2,
     "urgent": false
   }
   ```
 - **Fields & Validations (`MatchRequestUpdateDto`)**:
-  - `game`: string, optional, `@Size(max = 100)`
+  - `category`: string, optional, `@Size(max = 100)`. If provided, must match an active category in master data.
+  - `game`: string, optional, `@Size(max = 100)`. If provided, must match an active game/activity under the resolved category in master data.
   - `request_type`: string, optional, `@Pattern("OPPONENT|TEAMMATE")`
   - `status`: string, optional, `@Pattern("OPEN|MATCHED|FILLED|CANCELLED|COMPLETED")`
-  - `category`: string, optional, `@Size(max = 100)`
   - `message`: string, optional, `@Size(max = 2000)`
   - `time`: string (ISO-8601 date-time), optional
   - `location`: string, optional, `@Size(max = 255)`
+  - `players_needed`: integer, optional (`@Min(1)`, `@Max(100)`). Number of players needed for teammate requests.
   - `urgent`: boolean, optional
 - **Response**: `200 OK` (`MatchRequestResponseDto`)
 
@@ -539,9 +572,10 @@ Used by customers/players to find opponents or teammates for sports and gaming s
     "sortField": "created_on",
     "sortOrder": "DESC",
     "game": "Futsal",
-    "requestType": "OPPONENT",
+    "requestType": "TEAMMATE",
     "status": "OPEN",
     "location": "Kathmandu",
+    "players_needed": 3,
     "urgent": true,
     "requestedBy": "optional-user-id",
     "upcomingOnly": false,
@@ -551,12 +585,13 @@ Used by customers/players to find opponents or teammates for sports and gaming s
 - **Fields & Validations (`MatchRequestFilter`)**:
   - `pageNumber`: integer, page number (1-indexed, default 1)
   - `pageSize`: integer, page size limit (default 10)
-  - `sortField`: string, sort column (`created_on`, `time`, `game`, `category`, `location`, `status`, `request_type`, `urgent`)
+  - `sortField`: string, sort column (`created_on`, `time`, `game`, `category`, `location`, `players_needed`, `status`, `request_type`, `urgent`)
   - `sortOrder`: string (`ASC` or `DESC`)
   - `game`: string, optional partial match
   - `requestType`: string, optional (`OPPONENT` or `TEAMMATE`)
   - `status`: string, optional (`OPEN`, `MATCHED`, `FILLED`, `CANCELLED`, `COMPLETED`)
   - `location`: string, optional partial match
+  - `players_needed`: integer, optional filter for required player count
   - `urgent`: boolean, optional
   - `requestedBy`: string (UUID), optional user filter
   - `timeFrom`: string (ISO-8601 date-time), optional filter for match time >= timeFrom
@@ -576,13 +611,14 @@ Used by customers/players to find opponents or teammates for sports and gaming s
         {
           "id": "e8334460-aefb-4171-872f-5ea3b1187c32",
           "requested_by": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-          "request_type": "OPPONENT",
+          "request_type": "TEAMMATE",
           "status": "OPEN",
           "game": "Futsal",
           "category": "5v5 Casual",
-          "message": "Looking for a competitive 5v5 team tonight!",
+          "message": "Looking for 3 players to join our futsal team tonight!",
           "time": "2026-10-30T19:00:00",
           "location": "Dillibazar Futsal Arena, Kathmandu",
+          "players_needed": 3,
           "urgent": true,
           "created_on": "2026-10-30T14:40:00",
           "modified_on": "2026-10-30T14:40:00",
@@ -594,32 +630,479 @@ Used by customers/players to find opponents or teammates for sports and gaming s
     "time": "2026-10-30T14:45:00.123456"
   }
   ```
+
+---
+
+## 6. Categories (`/api/client/categories`)
+
+Provides predefined sports, gaming, and activity categories for categorizing match requests and events, linking directly to master data items (games/activities).
+
+### 6.1 List All Categories (`GET /api/client/categories`)
+- **Authority / Permission**: Public (🌐 **PUBLIC**)
+- **Method**: `GET`
+- **Path**: `/api/client/categories`
+- **Query Parameters**:
+  - `includeItems` (boolean, optional, default: `false`): If `true`, returns all items (games/activities) nested inside each category.
+- **Description**: Returns all available categories (`E_SPORTS`, `SPORTS`, `TRAVEL`).
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": [
+      {
+        "code": "E_SPORTS",
+        "name": "E-Sports",
+        "slug": "e-sports",
+        "description": "Electronic sports and competitive video gaming",
+        "master_data_code": "ESPORTS_GAMES"
+      },
+      {
+        "code": "SPORTS",
+        "name": "Sports",
+        "slug": "sports",
+        "description": "Physical outdoor and indoor sports",
+        "master_data_code": "SPORTS_GAMES"
+      },
+      {
+        "code": "TRAVEL",
+        "name": "Travel",
+        "slug": "travel",
+        "description": "Travel, outdoor adventures, and tours",
+        "master_data_code": "TRAVEL_ACTIVITIES"
+      }
+    ],
+    "time": "2026-11-07T10:55:00.123456"
+  }
+  ```
+
+### 6.2 Get Category Tree with Items (`GET /api/client/categories/tree` or `?includeItems=true`)
+- **Authority / Permission**: Public (🌐 **PUBLIC**)
+- **Method**: `GET`
+- **Path**: `/api/client/categories/tree`
+- **Description**: Returns full category tree with all games/activities nested under each category in a single request.
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": [
+      {
+        "code": "E_SPORTS",
+        "name": "E-Sports",
+        "slug": "e-sports",
+        "description": "Electronic sports and competitive video gaming",
+        "master_data_code": "ESPORTS_GAMES",
+        "items": [
+          {
+            "id": "c3000000-0000-0000-0000-000000000002",
+            "master_data_id": "b1000000-0000-0000-0000-000000000003",
+            "title": "Counter-Strike 2",
+            "code": "CS2",
+            "description": "Competitive FPS shooter",
+            "active": true
+          },
+          {
+            "id": "c3000000-0000-0000-0000-000000000003",
+            "master_data_id": "b1000000-0000-0000-0000-000000000003",
+            "title": "Dota 2",
+            "code": "DOTA2",
+            "description": "MOBA team strategy game",
+            "active": true
+          },
+          {
+            "id": "c3000000-0000-0000-0000-000000000005",
+            "master_data_id": "b1000000-0000-0000-0000-000000000003",
+            "title": "Mobile Legends",
+            "code": "MLBB",
+            "description": "5v5 mobile MOBA",
+            "active": true
+          },
+          {
+            "id": "c3000000-0000-0000-0000-000000000004",
+            "master_data_id": "b1000000-0000-0000-0000-000000000003",
+            "title": "PUBG Mobile",
+            "code": "PUBG_MOBILE",
+            "description": "Battle royale survival shooter",
+            "active": true
+          },
+          {
+            "id": "c3000000-0000-0000-0000-000000000001",
+            "master_data_id": "b1000000-0000-0000-0000-000000000003",
+            "title": "Valorant",
+            "code": "VALORANT",
+            "description": "5v5 tactical character-based shooter",
+            "active": true
+          }
+        ]
+      },
+      {
+        "code": "SPORTS",
+        "name": "Sports",
+        "slug": "sports",
+        "description": "Physical outdoor and indoor sports",
+        "master_data_code": "SPORTS_GAMES",
+        "items": [
+          {
+            "id": "c2000000-0000-0000-0000-000000000005",
+            "master_data_id": "b1000000-0000-0000-0000-000000000002",
+            "title": "Badminton",
+            "code": "BADMINTON",
+            "description": "Singles and doubles badminton",
+            "active": true
+          },
+          {
+            "id": "c2000000-0000-0000-0000-000000000003",
+            "master_data_id": "b1000000-0000-0000-0000-000000000002",
+            "title": "Basketball",
+            "code": "BASKETBALL",
+            "description": "Full-court or 3v3 basketball",
+            "active": true
+          },
+          {
+            "id": "c2000000-0000-0000-0000-000000000004",
+            "master_data_id": "b1000000-0000-0000-0000-000000000002",
+            "title": "Cricket",
+            "code": "CRICKET",
+            "description": "Box cricket, T20, and outdoor cricket",
+            "active": true
+          },
+          {
+            "id": "c2000000-0000-0000-0000-000000000002",
+            "master_data_id": "b1000000-0000-0000-0000-000000000002",
+            "title": "Football",
+            "code": "FOOTBALL",
+            "description": "Standard 11v11 association football",
+            "active": true
+          },
+          {
+            "id": "c2000000-0000-0000-0000-000000000001",
+            "master_data_id": "b1000000-0000-0000-0000-000000000002",
+            "title": "Futsal",
+            "code": "FUTSAL",
+            "description": "5v5 or 6v6 indoor/outdoor futsal",
+            "active": true
+          }
+        ]
+      },
+      {
+        "code": "TRAVEL",
+        "name": "Travel",
+        "slug": "travel",
+        "description": "Travel, outdoor adventures, and tours",
+        "master_data_code": "TRAVEL_ACTIVITIES",
+        "items": [
+          {
+            "id": "c4000000-0000-0000-0000-000000000003",
+            "master_data_id": "b1000000-0000-0000-0000-000000000004",
+            "title": "Camping",
+            "code": "CAMPING",
+            "description": "Outdoor camping and night stargazing",
+            "active": true
+          },
+          {
+            "id": "c4000000-0000-0000-0000-000000000004",
+            "master_data_id": "b1000000-0000-0000-0000-000000000004",
+            "title": "Cycling",
+            "code": "CYCLING",
+            "description": "Road and mountain biking trips",
+            "active": true
+          },
+          {
+            "id": "c4000000-0000-0000-0000-000000000001",
+            "master_data_id": "b1000000-0000-0000-0000-000000000004",
+            "title": "Hiking",
+            "code": "HIKING",
+            "description": "Day hikes and hill trails",
+            "active": true
+          },
+          {
+            "id": "c4000000-0000-0000-0000-000000000002",
+            "master_data_id": "b1000000-0000-0000-0000-000000000004",
+            "title": "Trekking",
+            "code": "TREKKING",
+            "description": "Multi-day mountain and trail expeditions",
+            "active": true
+          }
+        ]
+      }
+    ],
+    "time": "2026-11-07T10:55:00.123456"
+  }
+  ```
+
+### 6.3 Get Category by Code or Slug (`GET /api/client/categories/{code}`)
+- **Authority / Permission**: Public (🌐 **PUBLIC**)
+- **Method**: `GET`
+- **Path**: `/api/client/categories/{code}`
+- **Path Parameters**: `code` (string, case-insensitive match by code e.g. `SPORTS`, `sports`, `e-sports`)
+- **Response**: `200 OK`
   ```json
   {
     "code": "0",
     "message": "Success",
     "data": {
-      "totalRecords": 1,
-      "limit": 10,
-      "currentPage": 1,
-      "data": [
-        {
-          "id": "e8334460-aefb-4171-872f-5ea3b1187c32",
-          "requested_by": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-          "request_type": "OPPONENT",
-          "status": "OPEN",
-          "game": "Futsal",
-          "category": "5v5 Casual",
-          "message": "Looking for a competitive 5v5 team tonight!",
-          "time": "2026-10-30T19:00:00",
-          "urgent": true,
-          "created_on": "2026-10-30T14:40:00",
-          "modified_on": "2026-10-30T14:40:00",
-          "active": true,
-          "deleted": false
-        }
-      ]
+      "code": "SPORTS",
+      "name": "Sports",
+      "slug": "sports",
+      "description": "Physical outdoor and indoor sports",
+      "master_data_code": "SPORTS_GAMES"
     },
-    "time": "2026-10-30T14:45:00.123456"
+    "time": "2026-11-07T10:55:00.123456"
   }
   ```
+
+### 6.4 Get Items / Games for a Category (`GET /api/client/categories/{code}/items`)
+- **Authority / Permission**: Public (🌐 **PUBLIC**)
+- **Method**: `GET`
+- **Path**: `/api/client/categories/{code}/items`
+- **Path Parameters**: `code` (string, category code or slug e.g. `SPORTS`, `sports`, `e-sports`, `travel`)
+- **Description**: Returns all games or activities under that category.
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": [
+      {
+        "id": "c2000000-0000-0000-0000-000000000005",
+        "master_data_id": "b1000000-0000-0000-0000-000000000002",
+        "title": "Badminton",
+        "code": "BADMINTON",
+        "description": "Singles and doubles badminton",
+        "active": true
+      },
+      {
+        "id": "c2000000-0000-0000-0000-000000000003",
+        "master_data_id": "b1000000-0000-0000-0000-000000000002",
+        "title": "Basketball",
+        "code": "BASKETBALL",
+        "description": "Full-court or 3v3 basketball",
+        "active": true
+      },
+      {
+        "id": "c2000000-0000-0000-0000-000000000004",
+        "master_data_id": "b1000000-0000-0000-0000-000000000002",
+        "title": "Cricket",
+        "code": "CRICKET",
+        "description": "Box cricket, T20, and outdoor cricket",
+        "active": true
+      },
+      {
+        "id": "c2000000-0000-0000-0000-000000000002",
+        "master_data_id": "b1000000-0000-0000-0000-000000000002",
+        "title": "Football",
+        "code": "FOOTBALL",
+        "description": "Standard 11v11 association football",
+        "active": true
+      },
+      {
+        "id": "c2000000-0000-0000-0000-000000000001",
+        "master_data_id": "b1000000-0000-0000-0000-000000000002",
+        "title": "Futsal",
+        "code": "FUTSAL",
+        "description": "5v5 or 6v6 indoor/outdoor futsal",
+        "active": true
+      }
+    ],
+    "time": "2026-11-07T10:55:00.123456"
+  }
+  ```
+
+---
+
+## 7. Master Data (`/api/client/master-data`)
+
+Read-only reference endpoints for retrieving system master data headers and their corresponding items.
+
+### 7.1 Get Master Data by ID (`GET /api/client/master-data/{id}`)
+- **Authority / Permission**: Public (🌐 **PUBLIC**)
+- **Method**: `GET`
+- **Path**: `/api/client/master-data/{id}`
+- **Path Parameters**: `id` (UUID string)
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": {
+      "id": "b1000000-0000-0000-0000-000000000002",
+      "title": "Sports Games",
+      "code": "SPORTS_GAMES",
+      "created_on": "2026-11-07T10:00:00",
+      "modified_on": "2026-11-07T10:00:00",
+      "active": true
+    },
+    "time": "2026-11-07T10:55:00.123456"
+  }
+  ```
+
+### 7.2 Get Items by Master Data ID (`GET /api/client/master-data/{id}/items`)
+- **Authority / Permission**: Public (🌐 **PUBLIC**)
+- **Method**: `GET`
+- **Path**: `/api/client/master-data/{id}/items`
+- **Path Parameters**: `id` (UUID string)
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": [
+      {
+        "id": "c2000000-0000-0000-0000-000000000001",
+        "master_data_id": "b1000000-0000-0000-0000-000000000002",
+        "title": "Futsal",
+        "code": "FUTSAL",
+        "description": "5v5 or 6v6 indoor/outdoor futsal",
+        "active": true
+      }
+    ],
+    "time": "2026-11-07T10:55:00.123456"
+  }
+  ```
+
+### 7.3 Get Master Data by Code (`GET /api/client/master-data/code/{code}`)
+- **Authority / Permission**: Public (🌐 **PUBLIC**)
+- **Method**: `GET`
+- **Path**: `/api/client/master-data/code/{code}`
+- **Path Parameters**: `code` (string e.g. `CATEGORY`, `SPORTS_GAMES`, `ESPORTS_GAMES`, `TRAVEL_ACTIVITIES`)
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": [
+      {
+        "id": "b1000000-0000-0000-0000-000000000002",
+        "title": "Sports Games",
+        "code": "SPORTS_GAMES",
+        "active": true
+      }
+    ],
+    "time": "2026-11-07T10:55:00.123456"
+  }
+  ```
+
+### 7.4 Get Items directly by Master Data Code (`GET /api/client/master-data/code/{code}/items`)
+- **Authority / Permission**: Public (🌐 **PUBLIC**)
+- **Method**: `GET`
+- **Path**: `/api/client/master-data/code/{code}/items`
+- **Path Parameters**: `code` (string e.g. `SPORTS_GAMES`, `ESPORTS_GAMES`, `TRAVEL_ACTIVITIES`, `CATEGORY`)
+- **Description**: Directly fetches all active items belonging to the given master data code without needing the UUID.
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": [
+      {
+        "id": "c2000000-0000-0000-0000-000000000005",
+        "master_data_id": "b1000000-0000-0000-0000-000000000002",
+        "title": "Badminton",
+        "code": "BADMINTON",
+        "description": "Singles and doubles badminton",
+        "active": true
+      },
+      {
+        "id": "c2000000-0000-0000-0000-000000000001",
+        "master_data_id": "b1000000-0000-0000-0000-000000000002",
+        "title": "Futsal",
+        "code": "FUTSAL",
+        "description": "5v5 or 6v6 indoor/outdoor futsal",
+        "active": true
+      }
+    ],
+    "time": "2026-11-07T10:55:00.123456"
+  }
+  ```
+
+### 7.5 Search Master Data (`POST /api/client/master-data/search`)
+- **Authority / Permission**: Public (🌐 **PUBLIC**)
+- **Method**: `POST`
+- **Path**: `/api/client/master-data/search`
+- **Request Body**:
+  ```json
+  {
+    "pageNumber": 1,
+    "pageSize": 10,
+    "searchParameter": "Sports",
+    "active": true
+  }
+  ```
+- **Response**: `200 OK` (Standard `Page<MasterDataResponseDto>` envelope)
+
+---
+
+## 8. Master Data Items (`/api/client/master-data-items`)
+
+### 8.1 Get Master Data Item by ID (`GET /api/client/master-data-items/{id}`)
+- **Authority / Permission**: Public (🌐 **PUBLIC**)
+- **Method**: `GET`
+- **Path**: `/api/client/master-data-items/{id}`
+- **Path Parameters**: `id` (UUID string)
+- **Response**: `200 OK`
+  ```json
+  {
+    "code": "0",
+    "message": "Success",
+    "data": {
+      "id": "c2000000-0000-0000-0000-000000000001",
+      "master_data_id": "b1000000-0000-0000-0000-000000000002",
+      "title": "Futsal",
+      "code": "FUTSAL",
+      "description": "5v5 or 6v6 indoor/outdoor futsal",
+      "active": true
+    },
+    "time": "2026-11-07T10:55:00.123456"
+  }
+  ```
+
+### 8.2 Search Master Data Items (`POST /api/client/master-data-items/search`)
+- **Authority / Permission**: Public (🌐 **PUBLIC**)
+- **Method**: `POST`
+- **Path**: `/api/client/master-data-items/search`
+- **Request Body**:
+  ```json
+  {
+    "pageNumber": 1,
+    "pageSize": 10,
+    "masterDataId": "b1000000-0000-0000-0000-000000000002",
+    "searchParameter": "Futsal",
+    "active": true
+  }
+  ```
+- **Response**: `200 OK` (Standard `Page<MasterDataItemResponseDto>` envelope)
+
+---
+
+## 9. Frontend Integration Flow: How FE Retrieves & Uses This Data
+
+When building match creation and filtering interfaces (e.g. Create Match / Challenge Request, Filter Feed):
+
+1. **Option 1: Bootstrap Everything in 1 Call (Recommended for SPAs and Mobile Apps)**:
+   - Call `GET /api/client/categories/tree` (or `GET /api/client/categories?includeItems=true`).
+   - The backend dynamically queries `system.master_data` and `system.master_data_items` in the database, returning every active category and all its configured games/activities.
+   - Store the response in global state (Redux, Pinia, Zustand, React Context).
+   - Use `data[i].name` for category tabs/dropdowns (`Sports`, `E-Sports`, `Travel`, or newly created categories).
+   - When a category is selected, instantly display its `data[i].items` (`Futsal`, `Valorant`, `Hiking`, etc.) without an extra network call!
+
+2. **Option 2: Dependent Dropdown Dynamic Fetching**:
+   - Call `GET /api/client/categories` on mount to populate the Category selector.
+   - When user selects `SPORTS`, trigger `GET /api/client/categories/SPORTS/items` (or `GET /api/client/master-data/code/SPORTS_GAMES/items`) to populate the Game selector.
+
+3. **Submitting to Create Match Request (`POST /api/client/match-requests`)**:
+   - Send `category`: e.g. `"SPORTS"` (or `"E_SPORTS"`, `"TRAVEL"`, or any custom category code).
+   - Send `game`: Selected item's title or code (e.g. `"Futsal"` or `"FUTSAL"`).
+   - Send `location`: e.g. `"Dhanyenthar Futsal, Kathmandu"`.
+   - Send `players_needed`: integer e.g. `2` (when searching for teammates).
+   - Send `time`: ISO 8601 future date/time e.g. `"2026-11-08T18:00:00"`.
+
+4. **Handling Backend Master Data Validation**:
+   - The backend validates that:
+     1. The `category` exists as an active entry in the master data database. If not, it responds with `400 Bad Request`:
+        `{"code": "400", "message": "Invalid category: '...'. Category must be an active category defined in master data."}`
+     2. The `game` exists as an active item under that specific `category`. If not, or if a user submits a game from a different category, it responds with `400 Bad Request`:
+        `{"code": "400", "message": "Invalid game: '...'. Game must be a valid active game/activity under category '...' from master data."}`
+   - The frontend should map these `400` messages directly to UI field errors or toast notifications.
+
+

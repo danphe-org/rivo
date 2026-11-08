@@ -52,6 +52,14 @@ public class MasterDataItemServiceImpl implements MasterDataItemService {
   }
 
   @Override
+  public List<MasterDataItemDomain> getByMasterDataCode(String masterDataCode, UserDomain actor) {
+    if (masterDataCode == null || masterDataCode.isBlank()) {
+      return List.of();
+    }
+    return repository.findByMasterDataCode(masterDataCode.trim());
+  }
+
+  @Override
   public MasterDataItemDomain update(MasterDataItemDomain domain, UserDomain actor) {
     return new MasterDataItemUpdateUseCase(converter, auditDao, repository, masterDataRepository, actor).execute(domain);
   }

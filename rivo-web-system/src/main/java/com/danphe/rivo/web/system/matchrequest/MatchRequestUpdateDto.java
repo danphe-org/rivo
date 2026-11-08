@@ -1,7 +1,10 @@
 package com.danphe.rivo.web.system.matchrequest;
 
 import com.danphe.rivo.common.matchrequest.MatchRequestDomain;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDateTime;
@@ -28,6 +31,12 @@ public record MatchRequestUpdateDto(
     @Size(max = 255, message = "Location cannot exceed 255 characters")
     String location,
 
+    @Min(value = 1, message = "Players needed must be at least 1")
+    @Max(value = 100, message = "Players needed cannot exceed 100")
+    @JsonProperty("players_needed")
+    @JsonAlias({"players_needed", "playersNeeded", "player_count", "players_count", "playersCount", "numberOfPlayers", "number_of_players"})
+    Integer playersNeeded,
+
     Boolean urgent
 ) {
   public MatchRequestDomain toDomain(String id) {
@@ -40,6 +49,7 @@ public record MatchRequestUpdateDto(
     domain.setMessage(message);
     domain.setTime(time);
     domain.setLocation(location);
+    domain.setPlayersNeeded(playersNeeded);
     if (urgent != null) {
       domain.setUrgent(urgent);
     }

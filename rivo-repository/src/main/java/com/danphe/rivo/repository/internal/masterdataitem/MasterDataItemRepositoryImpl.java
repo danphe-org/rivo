@@ -62,6 +62,11 @@ public class MasterDataItemRepositoryImpl implements MasterDataItemRepository {
   }
 
   @Override
+  public List<MasterDataItemDomain> findByMasterDataCode(String masterDataCode) {
+    return converter.toDomainList(mapper.findByMasterDataCode(masterDataCode));
+  }
+
+  @Override
   public Optional<MasterDataItemDomain> findByMasterDataIdAndTitle(String masterDataId, String title) {
     return Optional.ofNullable(mapper.findByMasterDataIdAndTitle(masterDataId, title)).map(converter::toDomain);
   }

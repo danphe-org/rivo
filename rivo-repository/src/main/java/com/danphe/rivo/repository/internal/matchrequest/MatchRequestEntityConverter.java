@@ -21,6 +21,7 @@ public class MatchRequestEntityConverter
     entity.setMessage(domain.getMessage());
     entity.setTime(domain.getTime());
     entity.setLocation(domain.getLocation());
+    entity.setPlayersNeeded(domain.getPlayersNeeded());
     entity.setUrgent(domain.isUrgent());
     entity.setRequestedByName(domain.getRequestedByName());
     entity.setRequestedByEmail(domain.getRequestedByEmail());
@@ -40,6 +41,7 @@ public class MatchRequestEntityConverter
     domain.setMessage(entity.getMessage());
     domain.setTime(entity.getTime());
     domain.setLocation(entity.getLocation());
+    domain.setPlayersNeeded(entity.getPlayersNeeded());
     domain.setUrgent(entity.isUrgent());
     domain.setRequestedByName(entity.getRequestedByName());
     domain.setRequestedByEmail(entity.getRequestedByEmail());

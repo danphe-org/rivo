@@ -43,6 +43,13 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers("/api/client/users/register")
                     .permitAll()
+                    .requestMatchers("/api/client/categories", "/api/client/categories/**")
+                    .permitAll()
+                    .requestMatchers("/api/client/master-data", "/api/client/master-data/**")
+                    .permitAll()
+                    .requestMatchers(
+                        "/api/client/master-data-items", "/api/client/master-data-items/**")
+                    .permitAll()
                     .requestMatchers("/actuator/health", "/actuator/health/**", "/health")
                     .permitAll()
                     .requestMatchers(

@@ -9,23 +9,33 @@ import com.danphe.rivo.common.matchrequest.MatchRequestType;
 import com.danphe.rivo.common.modules.SystemModules;
 import com.danphe.rivo.common.user.UserDomain;
 import com.danphe.rivo.repository.api.MatchRequestRepository;
+import com.danphe.rivo.service.internal.matchrequest.validator.MatchRequestMasterDataValidator;
 
 public class MatchRequestAddUseCase
     extends AbstractAddUseCase<MatchRequestDomain, MatchRequestDomain> {
 
+  private final MatchRequestMasterDataValidator masterDataValidator;
   private final UserDomain actor;
 
   public MatchRequestAddUseCase(
       EntityConverter converter,
       AbstractDao auditDao,
       MatchRequestRepository repository,
+      MatchRequestMasterDataValidator masterDataValidator,
       UserDomain actor) {
     super(converter, auditDao, repository);
+    this.masterDataValidator = masterDataValidator;
     this.actor = actor;
   }
 
   @Override
   protected void validate(MatchRequestDomain req) {
+    if (masterDataValidator != null) {
+      MatchRequestMasterDataValidator.ValidatedResult validated =
+          masterDataValidator.validate(req.getCategory(), req.getGame());
+      req.setCategory(validated.category());
+      req.setGame(validated.game());
+    }
   }
 
   @Override
@@ -51,6 +61,13 @@ public class MatchRequestAddUseCase
     }
     if (domain.getLocation() != null) {
       domain.setLocation(domain.getLocation().trim());
+    }
+    if (MatchRequestType.TEAMMATE.name().equalsIgnoreCase(domain.getRequestType())) {
+      if (domain.getPlayersNeeded() == null || domain.getPlayersNeeded() <= 0) {
+        domain.setPlayersNeeded(1);
+      }
+    } else {
+      domain.setPlayersNeeded(null);
     }
   }
 

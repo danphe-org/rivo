@@ -98,6 +98,19 @@
         ORDER BY title ASC
     </select>
 
+    <select id="findByMasterDataCode" resultMap="masterDataItemResultMap">
+        SELECT i.id, i.master_data_id, i.title, i.code, i.description,
+               i.created_on, i.created_by, i.last_modified_on, i.last_modified_by,
+               i.deleted_on, i.deleted_by, i.active, i.deleted, i.remark, i.version
+        FROM system.master_data_items i
+        INNER JOIN system.master_data m ON m.id = i.master_data_id
+        WHERE UPPER(m.code) = UPPER(#{masterDataCode})
+          AND m.deleted = false
+          AND i.deleted = false
+          AND i.active = true
+        ORDER BY i.title ASC
+    </select>
+
     <select id="findByMasterDataIdAndTitle" resultMap="masterDataItemResultMap">
         SELECT <include refid="selectColumns"/>
         FROM system.master_data_items

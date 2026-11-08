@@ -18,6 +18,8 @@ public interface MasterDataItemMapper {
 
   List<MasterDataItemEntity> findByMasterDataId(@Param("masterDataId") String masterDataId);
 
+  List<MasterDataItemEntity> findByMasterDataCode(@Param("masterDataCode") String masterDataCode);
+
   MasterDataItemEntity findByMasterDataIdAndTitle(
       @Param("masterDataId") String masterDataId,
       @Param("title") String title);

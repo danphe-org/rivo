@@ -15,6 +15,7 @@
         <result property="message"          column="message"/>
         <result property="time"             column="time"              javaType="java.time.LocalDateTime"/>
         <result property="location"         column="location"/>
+        <result property="playersNeeded"    column="players_needed"/>
         <result property="urgent"           column="urgent"/>
         <result property="createdOn"        column="created_on"        javaType="java.time.LocalDateTime"/>
         <result property="createdBy"        column="created_by"/>
@@ -32,7 +33,7 @@
 
     <sql id="selectColumns">
         mr.id, mr.requested_by, mr.request_type, mr.status, mr.game, mr.category, mr.message,
-        mr."time" AS time, mr.location, mr.urgent,
+        mr."time" AS time, mr.location, mr.players_needed, mr.urgent,
         mr.created_on, mr.created_by, mr.last_modified_on, mr.last_modified_by,
         mr.deleted_on, mr.deleted_by, mr.active, mr.deleted, mr.remark, mr.version,
         u.name AS requested_by_name, u.email AS requested_by_email
@@ -66,6 +67,9 @@
             </if>
             <if test="filter.location != null and filter.location != ''">
                 AND LOWER(mr.location) LIKE LOWER(CONCAT('%', #{filter.location}, '%'))
+            </if>
+            <if test="filter.playersNeeded != null">
+                AND mr.players_needed = #{filter.playersNeeded}
             </if>
             <if test="filter.urgent != null">
                 AND mr.urgent = #{filter.urgent}
@@ -180,11 +184,11 @@
 
     <insert id="insert">
         INSERT INTO client.match_requests (
-            id, requested_by, request_type, status, game, category, message, "time", location, urgent,
+            id, requested_by, request_type, status, game, category, message, "time", location, players_needed, urgent,
             created_on, created_by, last_modified_on, last_modified_by,
             active, deleted, remark, version
         ) VALUES (
-            #{id}::uuid, #{requestedBy}::uuid, #{requestType}, #{status}, #{game}, #{category}, #{message}, #{time}, #{location}, #{urgent},
+            #{id}::uuid, #{requestedBy}::uuid, #{requestType}, #{status}, #{game}, #{category}, #{message}, #{time}, #{location}, #{playersNeeded}, #{urgent},
             #{createdOn}, #{createdBy}, #{lastModifiedOn}, #{lastModifiedBy},
             #{active}, #{deleted}, #{remark}, #{version}
         )
@@ -200,6 +204,7 @@
             <if test="message != null">message = #{message},</if>
             <if test="time != null">"time" = #{time},</if>
             <if test="location != null">location = #{location},</if>
+            <if test="playersNeeded != null">players_needed = #{playersNeeded},</if>
             urgent = #{urgent},
             <if test="lastModifiedOn != null">last_modified_on = #{lastModifiedOn},</if>
             <if test="lastModifiedBy != null">last_modified_by = #{lastModifiedBy},</if>

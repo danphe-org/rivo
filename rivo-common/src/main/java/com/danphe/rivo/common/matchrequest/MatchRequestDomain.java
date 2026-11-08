@@ -23,6 +23,7 @@ public class MatchRequestDomain extends AbstractDomain {
   private String message;
   private LocalDateTime time;
   private String location;
+  private Integer playersNeeded;
   private boolean urgent;
 
   private String requestedByName;
@@ -34,5 +35,9 @@ public class MatchRequestDomain extends AbstractDomain {
 
   public MatchRequestStatus getMatchRequestStatus() {
     return MatchRequestStatus.fromString(this.status);
+  }
+
+  public com.danphe.rivo.common.category.Category getCategoryEnum() {
+    return com.danphe.rivo.common.category.Category.fromString(this.category);
   }
 }
