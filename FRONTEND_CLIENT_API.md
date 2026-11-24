@@ -44,6 +44,17 @@ When an exception occurs (e.g. 400, 401, 403, 404, 500), the response body is fo
 }
 ```
 
+An unexpected server error returns HTTP 500 with this envelope. The `X-Request-ID` response header identifies the request in the server logs.
+
+```json
+{
+  "code": "500",
+  "message": "Internal Server Error",
+  "data": null,
+  "time": "2026-10-30T18:00:00.123456"
+}
+```
+
 ### Standard Pagination Envelope (`Page<T>`)
 Endpoints ending in `/search` return `Page<T>` inside the envelope `data` property:
 

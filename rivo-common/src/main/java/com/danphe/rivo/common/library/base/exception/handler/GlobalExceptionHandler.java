@@ -7,11 +7,11 @@ import com.danphe.rivo.common.library.base.exception.UnauthorizedException;
 import com.danphe.rivo.common.library.base.rest.ResponseTemplate;
 import com.danphe.rivo.common.library.base.rest.RestResponse;
 import com.danphe.rivo.common.library.util.date.DateUtils;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.NestedExceptionUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -55,15 +55,14 @@ public class GlobalExceptionHandler {
   }
 
   @ExceptionHandler(Exception.class)
-  public ResponseEntity<ResponseTemplate<String>> handleUnexpectedException(Exception e) {
-    log.error("Unhandled exception", e);
-    StringWriter sw = new StringWriter();
-    e.printStackTrace(new PrintWriter(sw));
-    ResponseTemplate<String> body = new ResponseTemplate<>();
-    body.setCode(String.valueOf(HttpStatus.INTERNAL_SERVER_ERROR.value()));
-    body.setMessage(e.getMessage());
-    body.setData(sw.toString());
-    body.setTime(DateUtils.now());
-    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
+  public ResponseEntity<ResponseTemplate<String>> handleUnexpectedException(
+      Exception e, HttpServletRequest request) {
+    Throwable cause = NestedExceptionUtils.getMostSpecificCause(e);
+    String summary = cause.toString().lines().findFirst().orElse(cause.getClass().getName());
+    log.error("Unhandled exception for {} {} [{}]", request.getMethod(), request.getRequestURI(), summary, e);
+    HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+    ResponseTemplate<String> body =
+        new ResponseTemplate<>(String.valueOf(status.value()), status.getReasonPhrase(), null, DateUtils.now());
+    return ResponseEntity.status(status).body(body);
   }
 }
