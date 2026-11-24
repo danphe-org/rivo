@@ -42,6 +42,9 @@ public class DotenvEnvironmentPostProcessor implements EnvironmentPostProcessor,
           continue;
         }
         String key = line.substring(0, eq).trim();
+        if (EnvConfigProvider.isDatabaseSetting(key)) {
+          continue;
+        }
         String val = line.substring(eq + 1).trim();
 
         if ((val.startsWith("\"") && val.endsWith("\""))

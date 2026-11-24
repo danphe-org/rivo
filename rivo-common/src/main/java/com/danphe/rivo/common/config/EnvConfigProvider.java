@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -71,6 +72,10 @@ public class EnvConfigProvider {
   }
 
   public String get(String key) {
+    if (isDatabaseSetting(key)) {
+      String value = System.getenv(toEnvName(key));
+      return value == null || value.isBlank() ? null : value.trim();
+    }
     reloadIfDue();
     String val = lookup(key);
     if (val != null) {
@@ -92,7 +97,8 @@ public class EnvConfigProvider {
   public String require(String key) {
     String val = get(key);
     if (val == null || val.isBlank()) {
-      throw new IllegalStateException("Required configuration key '" + key + "' is missing from .env");
+      String source = isDatabaseSetting(key) ? "the process environment" : "configuration";
+      throw new IllegalStateException("Required configuration key '" + key + "' is missing from " + source);
     }
     return val;
   }
@@ -145,6 +151,17 @@ public class EnvConfigProvider {
 
   public Map<String, String> getAllProperties() {
     return Collections.unmodifiableMap(properties.get());
+  }
+
+  static boolean isDatabaseSetting(String key) {
+    if (key == null) return false;
+    String name = toEnvName(key);
+    return name.startsWith("DB_") || name.startsWith("FLYWAY_")
+        || name.startsWith("SPRING_DATASOURCE_") || name.startsWith("SPRING_FLYWAY_");
+  }
+
+  private static String toEnvName(String key) {
+    return key.toUpperCase(Locale.ROOT).replace('.', '_').replace('-', '_');
   }
 
   private String lookup(String key) {
@@ -203,6 +220,9 @@ public class EnvConfigProvider {
           continue;
         }
         String key = line.substring(0, eq).trim();
+      if (isDatabaseSetting(key)) {
+        continue;
+      }
         String val = line.substring(eq + 1).trim();
 
         if ((val.startsWith("\"") && val.endsWith("\""))
