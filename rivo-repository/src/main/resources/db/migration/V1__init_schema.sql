@@ -7,7 +7,6 @@ CREATE TABLE IF NOT EXISTS system.system_users (
     email            VARCHAR(255) NOT NULL UNIQUE,
     password         VARCHAR(255),
     phone            VARCHAR(30),
-    verified         BOOLEAN NOT NULL DEFAULT TRUE,
     created_by       VARCHAR(36),
     created_on       TIMESTAMP WITH TIME ZONE NOT NULL,
     last_modified_by VARCHAR(36),
@@ -17,7 +16,8 @@ CREATE TABLE IF NOT EXISTS system.system_users (
     active           BOOLEAN NOT NULL DEFAULT TRUE,
     deleted          BOOLEAN NOT NULL DEFAULT FALSE,
     remark           TEXT,
-    version          BIGINT NOT NULL DEFAULT 1
+    version          BIGINT NOT NULL DEFAULT 1,
+    verified         BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 CREATE INDEX IF NOT EXISTS ix_system_users_email ON system.system_users(email);
@@ -47,7 +47,6 @@ CREATE TABLE IF NOT EXISTS client.client_users (
     email            VARCHAR(255) NOT NULL UNIQUE,
     password         VARCHAR(255),
     phone            VARCHAR(30),
-    verified         BOOLEAN NOT NULL DEFAULT FALSE,
     created_by       VARCHAR(36),
     created_on       TIMESTAMP WITH TIME ZONE NOT NULL,
     last_modified_by VARCHAR(36),
@@ -57,7 +56,8 @@ CREATE TABLE IF NOT EXISTS client.client_users (
     active           BOOLEAN NOT NULL DEFAULT TRUE,
     deleted          BOOLEAN NOT NULL DEFAULT FALSE,
     remark           TEXT,
-    version          BIGINT NOT NULL DEFAULT 1
+    version          BIGINT NOT NULL DEFAULT 1,
+    verified         BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE INDEX IF NOT EXISTS ix_client_users_email ON client.client_users(email);
@@ -117,8 +117,6 @@ CREATE TABLE IF NOT EXISTS client.match_requests (
     category         VARCHAR(100),
     message          TEXT,
     time             TIMESTAMP,
-    location         VARCHAR(255),
-    players_needed   INT,
     urgent           BOOLEAN NOT NULL DEFAULT FALSE,
     created_by       VARCHAR(36),
     created_on       TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -129,7 +127,9 @@ CREATE TABLE IF NOT EXISTS client.match_requests (
     active           BOOLEAN NOT NULL DEFAULT TRUE,
     deleted          BOOLEAN NOT NULL DEFAULT FALSE,
     remark           TEXT,
-    version          BIGINT NOT NULL DEFAULT 1
+    version          BIGINT NOT NULL DEFAULT 1,
+    location         VARCHAR(255),
+    players_needed   INT
 );
 
 CREATE INDEX IF NOT EXISTS ix_match_requests_requested_by ON client.match_requests(requested_by);
@@ -206,9 +206,11 @@ CREATE TABLE IF NOT EXISTS system.audit_logs (
 );
 
 CREATE OR REPLACE VIEW public.users AS
-    SELECT id, name, email, password, phone, verified, created_by, created_on, last_modified_by, last_modified_on, deleted_by, deleted_on, active, deleted, remark, version FROM system.system_users
+    SELECT id, name, email, password, phone, created_by, created_on, last_modified_by, last_modified_on,
+           deleted_by, deleted_on, active, deleted, remark, version, verified FROM system.system_users
     UNION ALL
-    SELECT id, name, email, password, phone, verified, created_by, created_on, last_modified_by, last_modified_on, deleted_by, deleted_on, active, deleted, remark, version FROM client.client_users;
+    SELECT id, name, email, password, phone, created_by, created_on, last_modified_by, last_modified_on,
+           deleted_by, deleted_on, active, deleted, remark, version, verified FROM client.client_users;
 
 CREATE OR REPLACE VIEW public.user_roles AS
     SELECT id, user_id, role, created_by, created_on, last_modified_by, last_modified_on, deleted_by, deleted_on, active, deleted, remark, version FROM system.user_roles
@@ -223,7 +225,7 @@ CREATE OR REPLACE VIEW system.users AS SELECT * FROM system.system_users;
 CREATE OR REPLACE VIEW client.users AS SELECT * FROM client.client_users;
 
 INSERT INTO system.system_users (
-    id, name, email, password, phone, verified,
+    id, name, email, password, phone,
     created_by, created_on, last_modified_by, last_modified_on,
     active, deleted, remark, version
 ) VALUES (
@@ -232,7 +234,6 @@ INSERT INTO system.system_users (
     'superadmin@bazar.com',
     '$2a$12$UT8i.iyMaO.XJVq5lXazbOuoMGJPLxzQ/JpI4m/fowOR0lMmuqfWy',
     '+9779800000000',
-    true,
     'SYSTEM',
     NOW(),
     'SYSTEM',
@@ -269,7 +270,7 @@ INSERT INTO system.user_roles (
     deleted = false;
 
 INSERT INTO system.system_users (
-    id, name, email, password, phone, verified,
+    id, name, email, password, phone,
     created_by, created_on, last_modified_by, last_modified_on,
     active, deleted, remark, version
 ) VALUES (
@@ -278,7 +279,6 @@ INSERT INTO system.system_users (
     'superadmin@rivo.com',
     '$2a$12$UT8i.iyMaO.XJVq5lXazbOuoMGJPLxzQ/JpI4m/fowOR0lMmuqfWy',
     '+9779800000001',
-    true,
     'SYSTEM',
     NOW(),
     'SYSTEM',
@@ -314,45 +314,61 @@ INSERT INTO system.user_roles (
     active = true,
     deleted = false;
 
+WITH seed (id, title, code, remark) AS (
+    VALUES
+    ('b1000000-0000-0000-0000-000000000001'::uuid, 'Category', 'CATEGORY', 'Predefined activity and match categories'),
+    ('b1000000-0000-0000-0000-000000000002'::uuid, 'Sports Games', 'SPORTS_GAMES', 'Predefined physical sports games'),
+    ('b1000000-0000-0000-0000-000000000003'::uuid, 'E-Sports Games', 'ESPORTS_GAMES', 'Predefined e-sports video games'),
+    ('b1000000-0000-0000-0000-000000000004'::uuid, 'Travel Activities', 'TRAVEL_ACTIVITIES', 'Predefined travel and outdoor activities')
+)
 INSERT INTO system.master_data (
     id, title, code, created_by, created_on, last_modified_by, last_modified_on, active, deleted, remark, version
-) VALUES
-    ('b1000000-0000-0000-0000-000000000001', 'Category', 'CATEGORY', 'SYSTEM', NOW(), 'SYSTEM', NOW(), true, false, 'Predefined activity and match categories', 1),
-    ('b1000000-0000-0000-0000-000000000002', 'Sports Games', 'SPORTS_GAMES', 'SYSTEM', NOW(), 'SYSTEM', NOW(), true, false, 'Predefined physical sports games', 1),
-    ('b1000000-0000-0000-0000-000000000003', 'E-Sports Games', 'ESPORTS_GAMES', 'SYSTEM', NOW(), 'SYSTEM', NOW(), true, false, 'Predefined e-sports video games', 1),
-    ('b1000000-0000-0000-0000-000000000004', 'Travel Activities', 'TRAVEL_ACTIVITIES', 'SYSTEM', NOW(), 'SYSTEM', NOW(), true, false, 'Predefined travel and outdoor activities', 1)
-ON CONFLICT (id) DO UPDATE SET
-    title = EXCLUDED.title,
-    code = EXCLUDED.code,
-    active = true,
-    deleted = false;
+)
+SELECT seed.id, seed.title, seed.code, 'SYSTEM', NOW(), 'SYSTEM', NOW(), true, false, seed.remark, 1
+FROM seed
+WHERE NOT EXISTS (
+    SELECT 1 FROM system.master_data existing WHERE UPPER(existing.code) = seed.code
+)
+ON CONFLICT DO NOTHING;
 
+WITH seed (id, parent_code, title, code, description, remark) AS (
+    VALUES
+    ('c1000000-0000-0000-0000-000000000001'::uuid, 'CATEGORY', 'E-Sports', 'E_SPORTS', 'Electronic sports and competitive video gaming', 'Predefined Category item'),
+    ('c1000000-0000-0000-0000-000000000002'::uuid, 'CATEGORY', 'Sports', 'SPORTS', 'Physical outdoor and indoor sports', 'Predefined Category item'),
+    ('c1000000-0000-0000-0000-000000000003'::uuid, 'CATEGORY', 'Travel', 'TRAVEL', 'Travel, outdoor adventures, and tours', 'Predefined Category item'),
+    ('c2000000-0000-0000-0000-000000000001'::uuid, 'SPORTS_GAMES', 'Futsal', 'FUTSAL', '5v5 or 6v6 indoor/outdoor futsal', 'Predefined Sports item'),
+    ('c2000000-0000-0000-0000-000000000002'::uuid, 'SPORTS_GAMES', 'Football', 'FOOTBALL', 'Standard 11v11 association football', 'Predefined Sports item'),
+    ('c2000000-0000-0000-0000-000000000003'::uuid, 'SPORTS_GAMES', 'Basketball', 'BASKETBALL', 'Full-court or 3v3 basketball', 'Predefined Sports item'),
+    ('c2000000-0000-0000-0000-000000000004'::uuid, 'SPORTS_GAMES', 'Cricket', 'CRICKET', 'Box cricket, T20, and outdoor cricket', 'Predefined Sports item'),
+    ('c2000000-0000-0000-0000-000000000005'::uuid, 'SPORTS_GAMES', 'Badminton', 'BADMINTON', 'Singles and doubles badminton', 'Predefined Sports item'),
+    ('c3000000-0000-0000-0000-000000000001'::uuid, 'ESPORTS_GAMES', 'Valorant', 'VALORANT', '5v5 tactical character-based shooter', 'Predefined E-Sports item'),
+    ('c3000000-0000-0000-0000-000000000002'::uuid, 'ESPORTS_GAMES', 'Counter-Strike 2', 'CS2', 'Competitive FPS shooter', 'Predefined E-Sports item'),
+    ('c3000000-0000-0000-0000-000000000003'::uuid, 'ESPORTS_GAMES', 'Dota 2', 'DOTA2', 'MOBA team strategy game', 'Predefined E-Sports item'),
+    ('c3000000-0000-0000-0000-000000000004'::uuid, 'ESPORTS_GAMES', 'PUBG Mobile', 'PUBG_MOBILE', 'Battle royale survival shooter', 'Predefined E-Sports item'),
+    ('c3000000-0000-0000-0000-000000000005'::uuid, 'ESPORTS_GAMES', 'Mobile Legends', 'MLBB', '5v5 mobile MOBA', 'Predefined E-Sports item'),
+    ('c4000000-0000-0000-0000-000000000001'::uuid, 'TRAVEL_ACTIVITIES', 'Hiking', 'HIKING', 'Day hikes and hill trails', 'Predefined Travel item'),
+    ('c4000000-0000-0000-0000-000000000002'::uuid, 'TRAVEL_ACTIVITIES', 'Trekking', 'TREKKING', 'Multi-day mountain and trail expeditions', 'Predefined Travel item'),
+    ('c4000000-0000-0000-0000-000000000003'::uuid, 'TRAVEL_ACTIVITIES', 'Camping', 'CAMPING', 'Outdoor camping and night stargazing', 'Predefined Travel item'),
+    ('c4000000-0000-0000-0000-000000000004'::uuid, 'TRAVEL_ACTIVITIES', 'Cycling', 'CYCLING', 'Road and mountain biking trips', 'Predefined Travel item')
+)
 INSERT INTO system.master_data_items (
-    id, master_data_id, title, code, description, created_by, created_on, last_modified_by, last_modified_on, active, deleted, remark, version
-) VALUES
-    ('c1000000-0000-0000-0000-000000000001', 'b1000000-0000-0000-0000-000000000001', 'E-Sports', 'E_SPORTS', 'Electronic sports and competitive video gaming', 'SYSTEM', NOW(), 'SYSTEM', NOW(), true, false, 'Predefined Category item', 1),
-    ('c1000000-0000-0000-0000-000000000002', 'b1000000-0000-0000-0000-000000000001', 'Sports', 'SPORTS', 'Physical outdoor and indoor sports', 'SYSTEM', NOW(), 'SYSTEM', NOW(), true, false, 'Predefined Category item', 1),
-    ('c1000000-0000-0000-0000-000000000003', 'b1000000-0000-0000-0000-000000000001', 'Travel', 'TRAVEL', 'Travel, outdoor adventures, and tours', 'SYSTEM', NOW(), 'SYSTEM', NOW(), true, false, 'Predefined Category item', 1),
-
-    ('c2000000-0000-0000-0000-000000000001', 'b1000000-0000-0000-0000-000000000002', 'Futsal', 'FUTSAL', '5v5 or 6v6 indoor/outdoor futsal', 'SYSTEM', NOW(), 'SYSTEM', NOW(), true, false, 'Predefined Sports item', 1),
-    ('c2000000-0000-0000-0000-000000000002', 'b1000000-0000-0000-0000-000000000002', 'Football', 'FOOTBALL', 'Standard 11v11 association football', 'SYSTEM', NOW(), 'SYSTEM', NOW(), true, false, 'Predefined Sports item', 1),
-    ('c2000000-0000-0000-0000-000000000003', 'b1000000-0000-0000-0000-000000000002', 'Basketball', 'BASKETBALL', 'Full-court or 3v3 basketball', 'SYSTEM', NOW(), 'SYSTEM', NOW(), true, false, 'Predefined Sports item', 1),
-    ('c2000000-0000-0000-0000-000000000004', 'b1000000-0000-0000-0000-000000000002', 'Cricket', 'CRICKET', 'Box cricket, T20, and outdoor cricket', 'SYSTEM', NOW(), 'SYSTEM', NOW(), true, false, 'Predefined Sports item', 1),
-    ('c2000000-0000-0000-0000-000000000005', 'b1000000-0000-0000-0000-000000000002', 'Badminton', 'BADMINTON', 'Singles and doubles badminton', 'SYSTEM', NOW(), 'SYSTEM', NOW(), true, false, 'Predefined Sports item', 1),
-
-    ('c3000000-0000-0000-0000-000000000001', 'b1000000-0000-0000-0000-000000000003', 'Valorant', 'VALORANT', '5v5 tactical character-based shooter', 'SYSTEM', NOW(), 'SYSTEM', NOW(), true, false, 'Predefined E-Sports item', 1),
-    ('c3000000-0000-0000-0000-000000000002', 'b1000000-0000-0000-0000-000000000003', 'Counter-Strike 2', 'CS2', 'Competitive FPS shooter', 'SYSTEM', NOW(), 'SYSTEM', NOW(), true, false, 'Predefined E-Sports item', 1),
-    ('c3000000-0000-0000-0000-000000000003', 'b1000000-0000-0000-0000-000000000003', 'Dota 2', 'DOTA2', 'MOBA team strategy game', 'SYSTEM', NOW(), 'SYSTEM', NOW(), true, false, 'Predefined E-Sports item', 1),
-    ('c3000000-0000-0000-0000-000000000004', 'b1000000-0000-0000-0000-000000000003', 'PUBG Mobile', 'PUBG_MOBILE', 'Battle royale survival shooter', 'SYSTEM', NOW(), 'SYSTEM', NOW(), true, false, 'Predefined E-Sports item', 1),
-    ('c3000000-0000-0000-0000-000000000005', 'b1000000-0000-0000-0000-000000000003', 'Mobile Legends', 'MLBB', '5v5 mobile MOBA', 'SYSTEM', NOW(), 'SYSTEM', NOW(), true, false, 'Predefined E-Sports item', 1),
-
-    ('c4000000-0000-0000-0000-000000000001', 'b1000000-0000-0000-0000-000000000004', 'Hiking', 'HIKING', 'Day hikes and hill trails', 'SYSTEM', NOW(), 'SYSTEM', NOW(), true, false, 'Predefined Travel item', 1),
-    ('c4000000-0000-0000-0000-000000000002', 'b1000000-0000-0000-0000-000000000004', 'Trekking', 'TREKKING', 'Multi-day mountain and trail expeditions', 'SYSTEM', NOW(), 'SYSTEM', NOW(), true, false, 'Predefined Travel item', 1),
-    ('c4000000-0000-0000-0000-000000000003', 'b1000000-0000-0000-0000-000000000004', 'Camping', 'CAMPING', 'Outdoor camping and night stargazing', 'SYSTEM', NOW(), 'SYSTEM', NOW(), true, false, 'Predefined Travel item', 1),
-    ('c4000000-0000-0000-0000-000000000004', 'b1000000-0000-0000-0000-000000000004', 'Cycling', 'CYCLING', 'Road and mountain biking trips', 'SYSTEM', NOW(), 'SYSTEM', NOW(), true, false, 'Predefined Travel item', 1)
-ON CONFLICT (id) DO UPDATE SET
-    title = EXCLUDED.title,
-    code = EXCLUDED.code,
-    description = EXCLUDED.description,
-    active = true,
-    deleted = false;
+    id, master_data_id, title, code, description, created_by, created_on, last_modified_by,
+    last_modified_on, active, deleted, remark, version
+)
+SELECT seed.id, parent.id, seed.title, seed.code, seed.description, 'SYSTEM', NOW(), 'SYSTEM',
+       NOW(), true, false, seed.remark, 1
+FROM seed
+JOIN LATERAL (
+    SELECT id
+    FROM system.master_data
+    WHERE UPPER(code) = seed.parent_code AND active = true AND deleted = false
+    ORDER BY id
+    LIMIT 1
+) parent ON true
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM system.master_data_items existing
+    WHERE existing.master_data_id = parent.id
+      AND (UPPER(existing.code) = seed.code OR LOWER(existing.title) = LOWER(seed.title))
+)
+ON CONFLICT DO NOTHING;
