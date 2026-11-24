@@ -28,7 +28,7 @@ public class DataSourceConfig {
   @PostConstruct
   void migrate() {
     if (appConfig.isFlywayEnabled()) {
-      Flyway.configure()
+      Flyway flyway = Flyway.configure()
           .dataSource(
               appConfig.getDbUrl(),
               appConfig.getDbUsername(),
@@ -38,8 +38,12 @@ public class DataSourceConfig {
           .locations(appConfig.getFlywayLocations())
           .baselineOnMigrate(appConfig.isFlywayBaselineOnMigrate())
           .baselineVersion(appConfig.getFlywayBaselineVersion())
-          .load()
-          .migrate();
+          .validateOnMigrate(appConfig.isFlywayValidateOnMigrate())
+          .load();
+      if (appConfig.isFlywayRepair()) {
+        flyway.repair();
+      }
+      flyway.migrate();
     }
   }
 

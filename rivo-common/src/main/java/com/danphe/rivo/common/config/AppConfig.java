@@ -81,7 +81,7 @@ public class AppConfig {
   }
 
   public String getDbPassword() {
-    return env.get("DB_PASSWORD", "");
+    return env.require("DB_PASSWORD");
   }
 
   public int getDbPoolMaxSize() {
@@ -109,7 +109,7 @@ public class AppConfig {
   }
 
   public String[] getFlywaySchemas() {
-    return env.get("FLYWAY_SCHEMAS", "client,system,public").split(",");
+    return env.get("FLYWAY_SCHEMAS", "system,client").split(",");
   }
 
   public String getFlywayDefaultSchema() {
@@ -126,6 +126,14 @@ public class AppConfig {
 
   public String getFlywayBaselineVersion() {
     return env.get("FLYWAY_BASELINE_VERSION", "0");
+  }
+
+  public boolean isFlywayValidateOnMigrate() {
+    return env.getBoolean("FLYWAY_VALIDATE_ON_MIGRATE", true);
+  }
+
+  public boolean isFlywayRepair() {
+    return env.getBoolean("FLYWAY_REPAIR", false);
   }
 
   public String getJwtSecret() {

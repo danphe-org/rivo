@@ -7,25 +7,37 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.env.EnvironmentPostProcessor;
+import org.springframework.boot.logging.DeferredLogFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.StandardEnvironment;
 
 public class DotenvEnvironmentPostProcessor implements EnvironmentPostProcessor, Ordered {
 
-  private static final Logger log = LoggerFactory.getLogger(DotenvEnvironmentPostProcessor.class);
   public static final String PROPERTY_SOURCE_NAME = "rivoDotenv";
+  private final Log log;
+
+  public DotenvEnvironmentPostProcessor(DeferredLogFactory logFactory) {
+    this.log = logFactory.getLog(DotenvEnvironmentPostProcessor.class);
+  }
+
+  public DotenvEnvironmentPostProcessor() {
+    this.log = LogFactory.getLog(DotenvEnvironmentPostProcessor.class);
+  }
 
   @Override
   public void postProcessEnvironment(
       ConfigurableEnvironment environment, SpringApplication application) {
     Path envPath = EnvConfigProvider.resolveEnvFilePath(null);
     if (!Files.exists(envPath)) {
-      log.info(".env file not found at: {}", envPath);
+      if (log.isDebugEnabled()) {
+        log.debug(".env file not found at: " + envPath);
+      }
       return;
     }
 
@@ -42,13 +54,11 @@ public class DotenvEnvironmentPostProcessor implements EnvironmentPostProcessor,
           continue;
         }
         String key = line.substring(0, eq).trim();
-        if (EnvConfigProvider.isDatabaseSetting(key)) {
-          continue;
-        }
         String val = line.substring(eq + 1).trim();
 
-        if ((val.startsWith("\"") && val.endsWith("\""))
-            || (val.startsWith("'") && val.endsWith("'"))) {
+        if (val.length() >= 2
+            && ((val.startsWith("\"") && val.endsWith("\""))
+                || (val.startsWith("'") && val.endsWith("'")))) {
           val = val.substring(1, val.length() - 1);
         }
 
@@ -57,18 +67,30 @@ public class DotenvEnvironmentPostProcessor implements EnvironmentPostProcessor,
       }
 
       if (!props.isEmpty()) {
-        environment
-            .getPropertySources()
-            .addFirst(new MapPropertySource(PROPERTY_SOURCE_NAME, props));
-        log.info("Loaded {} properties from {}", props.size() / 2, envPath);
+        if (environment.getPropertySources().contains(StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME)) {
+          environment
+              .getPropertySources()
+              .addAfter(
+                  StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME,
+                  new MapPropertySource(PROPERTY_SOURCE_NAME, props));
+        } else {
+          environment
+              .getPropertySources()
+              .addFirst(new MapPropertySource(PROPERTY_SOURCE_NAME, props));
+        }
+        if (log.isInfoEnabled()) {
+          log.info("Loaded " + (props.size() / 2) + " properties from " + envPath);
+        }
       }
     } catch (IOException e) {
-      log.error("Failed to read .env file at {}: {}", envPath, e.getMessage());
+      if (log.isErrorEnabled()) {
+        log.error("Failed to read .env file at " + envPath + ": " + e.getMessage());
+      }
     }
   }
 
   @Override
   public int getOrder() {
-    return Ordered.HIGHEST_PRECEDENCE + 10;
+    return Ordered.HIGHEST_PRECEDENCE;
   }
 }
